@@ -1,0 +1,16 @@
+{
+	"name": "Romhack_Info_Archive",
+	"version": "0.0.1",
+	"description": "A Romhack info archive",
+	"main": "main.js",
+	"repository": "https://github.com/TheGreatRambler/Romhack_Info_Archive",
+	"keywords": [
+		"romhacking",
+		"archive",
+		"timeline"
+	],
+	"author": "TheGreatRambler",
+	"dependencies": {
+		"puppeteer": "^5.2.1"
+	}
+}

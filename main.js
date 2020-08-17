@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
+const XLSX = require("node-xlsx");
 
 var allHackEntries = [];
 
@@ -346,13 +347,13 @@ async function sm64Archive2(browser) {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 4; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
-		Array.from(document.getElementById("mw-content-text").children).forEach(function (element) {
+		Array.from(document.getElementById("mw-content-text").children).forEach(function(element) {
 			if (haveReachedPoint) {
 				if (element.firstElementChild && element.firstElementChild.tagName === "A") {
 					var href = element.firstElementChild.href;
@@ -422,7 +423,7 @@ async function sm64DSArchive1(browser) {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 5; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
@@ -472,28 +473,163 @@ async function sm64DSArchive1(browser) {
 	}
 };
 
+async function pokemonArchive2(browser) {
+	const page = await browser.newPage();
+	await page.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
+		waitUntil: "domcontentloaded"
+	});
+
+	var links = await page.evaluate(() => {
+		var allLinks = Array.from(document.getElementsByClassName("item"), a => a.parentElement.href);
+		// Only include ones with pages
+		allLinks = allLinks.filter(item => item.indexOf("www.gbahacks.com") !== -1);
+		return allLinks;
+	});
+
+	console.log(links);
+
+	for (let i = 0; i < links.length; i++) {
+		await page.goto(links[i], {
+			waitUntil: "domcontentloaded"
+		});
+
+		var isNormalLayout = await page.evaluate(() => {
+			return document.getElementsByClassName("pblock").length != 0;
+		});
+
+		var hackEntry;
+		if (isNormalLayout) {
+			// New layout
+			hackEntry = await page.evaluate(() => {
+				var gameMapping = {
+					": Fire Red": "Pokemon Fire Red",
+					": FireRed": "Pokemon Fire Red",
+					": Red": "Pokemon Fire Red",
+					": Crystal": "Pokemon Crystal"
+				};
+
+				if (document.querySelector("[itemprop='name']")) {
+					return {
+						name: document.querySelector("[itemprop='name']").innerText,
+						author: document.querySelector("[itemprop='author']").innerText,
+						// Not the release date sadly, only the update time
+						release: document.getElementsByTagName("h4")[1].innerText.replace("Updated: ", ""),
+						originalgame: gameMapping[document.getElementsByTagName("b")[2].nextSibling.textContent],
+						system: document.querySelector("[itemprop='gamePlatform']").innerText,
+						downloads: null,
+						type: null,
+						// We can't know
+						important: false
+					};
+				} else {
+					return {
+						name: document.getElementsByTagName("span")[1].innerText,
+						author: document.getElementsByTagName("span")[4].innerText,
+						// Not the release date sadly, only the update time
+						release: document.getElementsByTagName("h4")[1].innerText.replace("Updated: ", ""),
+						originalgame: gameMapping[document.getElementsByTagName("b")[2].nextSibling.textContent],
+						system: document.getElementsByTagName("span")[2].innerText,
+						downloads: null,
+						type: null,
+						// We can't know
+						important: false
+					}
+				}
+			});
+		} else {
+			// Old layout
+			hackEntry = await page.evaluate(() => {
+				var gameMapping = {
+					": Fire Red": "Pokemon Fire Red",
+					": FireRed": "Pokemon Fire Red",
+					": Red": "Pokemon Fire Red",
+					": Crystal": "Pokemon Crystal",
+					": Gold": "Pokemon Gold"
+				};
+
+				var start = document.getElementsByTagName("h4")[3];
+
+				function advanceForwards(element, numberOfElements) {
+					for (let i = 0; i < numberOfElements; i++) {
+						element = element.nextSibling;
+					}
+					return element;
+				}
+
+				return {
+					name: advanceForwards(start, 1).textContent.replace("\nName: ", ""),
+					author: advanceForwards(start, 7).textContent.replace("\nCreator: ", ""),
+					// Not the release date sadly, only the update time
+					release: document.getElementsByTagName("h4")[1].innerText.replace("Updated on- ", ""),
+					originalgame: gameMapping[advanceForwards(start, 3).textContent.replace("\nHack of", "")],
+					system: document.getElementsByClassName("post-title entry-title")[0].innerText.split(" ").pop(),
+					downloads: null,
+					type: null,
+					// We can't know
+					important: false
+				}
+			});
+		}
+
+		hackEntry.url = links[i];
+
+		console.log(hackEntry);
+
+		allHackEntries.push(hackEntry);
+	}
+};
+
 (async () => {
 	const browser = await puppeteer.launch();
 
 	console.log("Browser opened");
 
-	await pokemonArchive1(browser);
-	await generalArchive1(browser);
-	await smwArchive1(browser);
-	await sm64Archive1(browser);
-	await yoshisIslandArchive1(browser);
-	await sm64Archive2(browser);
+	//await pokemonArchive1(browser);
+	//await generalArchive1(browser);
+	//await smwArchive1(browser);
+	//await sm64Archive1(browser);
+	//await yoshisIslandArchive1(browser);
+	//await sm64Archive2(browser);
 	await sm64DSArchive1(browser);
+	//await pokemonArchive2(browser);
+
+	var name = "database.xlsx";
 
 
-	fs.unlinkSync("hacks.txt");
-	var hackData = fs.createWriteStream("hacks.txt");
+	if (fs.existsSync(name)) fs.unlinkSync(name);
 
-	allHackEntries.forEach(function (hack) {
-		hackData.write(hack.name + "|" + hack.originalgame + "|" + hack.system + "|" + hack.release + "|" + hack.author + "|" + hack.downloads + "\n");
-	});
+	allHackEntries = allHackEntries.map(obj => [
+		obj.name,
+		obj.author,
+		obj.release,
+		obj.originalgame,
+		obj.system,
+		obj.downloads,
+		obj.type,
+		obj.important,
+		obj.url
+	]);
 
-	hackData.close();
+	allHackEntries.unshift([
+		"Name",
+		"Author",
+		"Release",
+		"Original Game",
+		"System",
+		"Downloads",
+		"Type",
+		"Important",
+		"Url"
+	]);
+
+	console.log(allHackEntries);
+
+	fs.writeFileSync(name, XLSX.build(
+		[{
+			name: "allhacks",
+			data: allHackEntries
+		}]
+	));
 
 	await browser.close();
 })();

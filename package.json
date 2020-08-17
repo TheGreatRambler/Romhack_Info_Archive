@@ -11,6 +11,7 @@
 	],
 	"author": "TheGreatRambler",
 	"dependencies": {
+		"node-xlsx": "^0.15.0",
 		"puppeteer": "^5.2.1"
 	}
 }

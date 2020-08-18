@@ -347,13 +347,13 @@ async function sm64Archive2(browser) {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 4; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
-		Array.from(document.getElementById("mw-content-text").children).forEach(function(element) {
+		Array.from(document.getElementById("mw-content-text").children).forEach(function (element) {
 			if (haveReachedPoint) {
 				if (element.firstElementChild && element.firstElementChild.tagName === "A") {
 					var href = element.firstElementChild.href;
@@ -423,7 +423,7 @@ async function sm64DSArchive1(browser) {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 5; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
@@ -579,22 +579,160 @@ async function pokemonArchive2(browser) {
 	}
 };
 
+async function smspowerArchive1(browser) {
+	const page = await browser.newPage();
+	await page.goto("https://www.smspower.org/Hacks/GameModifications", {
+		waitUntil: "domcontentloaded"
+	});
+
+	var links = await page.evaluate(() => {
+		var allLinks = Array.from(document.getElementsByTagName("h3"), a => a.firstElementChild.href);
+		return allLinks;
+	});
+
+	console.log(links);
+
+	for (let i = 0; i < links.length; i++) {
+		await page.goto(links[i], {
+			waitUntil: "domcontentloaded"
+		});
+
+		var hackEntry = await page.evaluate(() => {
+			var systemMapping = {
+				"Mod (SMS)": "Sega Master System",
+				"Mod (GG)": "Sega Game Gear"
+			};
+
+			var parts = document.getElementsByClassName("pagetitle")[0].innerText.split(" - ");
+			return {
+				name: parts[1],
+				author: document.getElementsByTagName("td")[5].innerText,
+				release: document.getElementsByTagName("td")[4].innerText,
+				originalgame: parts[0],
+				system: systemMapping[parts[2]],
+				downloads: null,
+				type: null,
+				// We can't know
+				important: false
+			}
+		});
+
+
+		hackEntry.url = links[i];
+
+		console.log(hackEntry);
+
+		allHackEntries.push(hackEntry);
+	}
+};
+
+async function atari2600Archive(browser) {
+	const page = await browser.newPage();
+	await page.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
+		waitUntil: "domcontentloaded"
+	});
+
+	var links = [];
+	var start = 0;
+
+	while (true) {
+		var partialLinks = await page.evaluate(() => {
+			var allLinks = Array.from(document.getElementsByTagName("tbody")[17].children);
+			allLinks = allLinks.slice(1, allLinks.length - 1).map(a => a.firstElementChild.firstElementChild.href);
+			return allLinks;
+		});
+
+		links = links.concat(partialLinks);
+
+		var shouldBreak = await page.evaluate(() => {
+			var table = document.querySelector("[valign='top'][align='left']").children;
+			return table[table.length - 4].innerText !== "Next";
+		});
+
+		if (shouldBreak) {
+			// This is the last page
+			break;
+		} else {
+			console.log("Handled page " + (start + 1));
+			start++;
+			await page.goto("https://atariage.com/software_hacks.php?SystemID=2600&currentPage=" + start, {
+				waitUntil: "domcontentloaded"
+			});
+		}
+	}
+
+	console.log(links);
+
+	for (let i = 0; i < links.length; i++) {
+		await page.goto(links[i], {
+			waitUntil: "domcontentloaded"
+		});
+
+		var hackEntry = await page.evaluate(() => {
+			var infoTable = document.querySelector("[cellspacing='0'][cellpadding='4']").firstElementChild.children;
+
+			var temp = {
+				name: document.getElementsByTagName("h1")[0].innerText.split(" - ")[1],
+				author: infoTable[1].children[1].innerText,
+				release: infoTable[3].children[1].innerText,
+				originalgame: infoTable[0].children[1].innerText.slice(0, -1),
+				system: "Atari 2600",
+				type: infoTable[2].children[1].firstElementChild.alt,
+				downloads: null,
+				important: false
+			}
+
+			return temp;
+		});
+
+		hackEntry.url = links[i];
+
+		console.log(hackEntry);
+
+		allHackEntries.push(hackEntry);
+	}
+}
+
 (async () => {
 	const browser = await puppeteer.launch();
 
 	console.log("Browser opened");
 
-	//await pokemonArchive1(browser);
-	//await generalArchive1(browser);
-	//await smwArchive1(browser);
-	//await sm64Archive1(browser);
-	//await yoshisIslandArchive1(browser);
-	//await sm64Archive2(browser);
+	// https://pokemonromhack.com/list
+	await pokemonArchive1(browser);
+
+	// https://www.romhacking.net/?page=hacks
+	await generalArchive1(browser);
+
+	// https://www.smwcentral.net/?p=section&s=smwhacks
+	await smwArchive1(browser);
+
+	// https://www.smwcentral.net/?p=section&s=sm64hacks
+	await sm64Archive1(browser);
+
+	// https://www.smwcentral.net/?p=section&s=yihacks
+	await yoshisIslandArchive1(browser);
+
+	// https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks
+	await sm64Archive2(browser);
+
+	// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
 	await sm64DSArchive1(browser);
-	//await pokemonArchive2(browser);
+
+	// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
+	await pokemonArchive2(browser);
+
+	// https://www.smspower.org/Hacks/GameModifications
+	await smspowerArchive1(browser);
+
+	// https://atariage.com/software_hacks.php?SystemID=2600
+	await atari2600Archive(browser);
+
+	const additionalHacks = require("./additional.js");
+	console.log(additionalHacks);
+	allHackEntries = allHackEntries.concat(additionalHacks);
 
 	var name = "database.xlsx";
-
 
 	if (fs.existsSync(name)) fs.unlinkSync(name);
 

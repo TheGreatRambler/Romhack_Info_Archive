@@ -43,7 +43,7 @@ async function handleWebpageTemplate(links, pageCallback) {
 	} while (i < links.length);
 }
 
-async function pokemonArchive1(browser) {
+async function pokemonArchive1() {
 	await mainBrowserPage.goto("https://pokemonromhack.com/list", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -76,7 +76,7 @@ async function pokemonArchive1(browser) {
 	});
 };
 
-async function generalArchive1(browser) {
+async function generalArchive1() {
 	await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -135,7 +135,7 @@ async function generalArchive1(browser) {
 	});
 }
 
-async function smwArchive1(browser) {
+async function smwArchive1() {
 	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -199,7 +199,7 @@ async function smwArchive1(browser) {
 	});
 }
 
-async function sm64Archive1(browser) {
+async function sm64Archive1() {
 	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -262,7 +262,7 @@ async function sm64Archive1(browser) {
 	});
 }
 
-async function yoshisIslandArchive1(browser) {
+async function yoshisIslandArchive1() {
 	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -326,7 +326,7 @@ async function yoshisIslandArchive1(browser) {
 	});
 }
 
-async function sm64Archive2(browser) {
+async function sm64Archive2() {
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -394,7 +394,7 @@ async function sm64Archive2(browser) {
 	});
 };
 
-async function sm64DSArchive1(browser) {
+async function sm64DSArchive1() {
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -446,7 +446,7 @@ async function sm64DSArchive1(browser) {
 	});
 };
 
-async function pokemonArchive2(browser) {
+async function pokemonArchive2() {
 	await mainBrowserPage.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -545,7 +545,7 @@ async function pokemonArchive2(browser) {
 	});
 };
 
-async function smspowerArchive1(browser) {
+async function smspowerArchive1() {
 	await mainBrowserPage.goto("https://www.smspower.org/Hacks/GameModifications", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -581,7 +581,7 @@ async function smspowerArchive1(browser) {
 	});
 };
 
-async function atari2600Archive(browser) {
+async function atari2600Archive() {
 	await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -640,43 +640,43 @@ async function atari2600Archive(browser) {
 
 (async () => {
 	browser = await puppeteer.launch();
-	mainBrowserPage = await browser.newPage();
+	mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
 
 	for (let i = 0; i < 30; i++) {
-		cachePages.push(await browser.newPage());
+		cachePages.push(await (await browser.createIncognitoBrowserContext()).newPage());
 	}
 
 	console.log("Browser opened");
 
 	// https://pokemonromhack.com/list
-	await pokemonArchive1(browser);
+	await pokemonArchive1();
 
 	// https://www.romhacking.net/?page=hacks
-	await generalArchive1(browser);
+	await generalArchive1();
 
 	// https://www.smwcentral.net/?p=section&s=smwhacks
-	await smwArchive1(browser);
+	await smwArchive1();
 
 	// https://www.smwcentral.net/?p=section&s=sm64hacks
-	await sm64Archive1(browser);
+	await sm64Archive1();
 
 	// https://www.smwcentral.net/?p=section&s=yihacks
-	await yoshisIslandArchive1(browser);
+	await yoshisIslandArchive1();
 
 	// https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks
-	await sm64Archive2(browser);
+	await sm64Archive2();
 
 	// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
-	await sm64DSArchive1(browser);
+	await sm64DSArchive1();
 
 	// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
-	await pokemonArchive2(browser);
+	await pokemonArchive2();
 
 	// https://www.smspower.org/Hacks/GameModifications
-	await smspowerArchive1(browser);
+	await smspowerArchive1();
 
 	// https://atariage.com/software_hacks.php?SystemID=2600
-	await atari2600Archive(browser);
+	await atari2600Archive();
 
 	const additionalHacks = require("./additional.js");
 	console.log(additionalHacks);

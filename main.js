@@ -4,13 +4,52 @@ const XLSX = require("node-xlsx");
 
 var allHackEntries = [];
 
+var browser;
+var mainBrowserPage;
+var cachePages = [];
+
+async function handleWebpageTemplate(links, pageCallback) {
+	var i = 0;
+	do {
+		cachePagePromises = [];
+
+		cachePages.forEach(function(page, index) {
+			var ret = (async function(page, index) {
+				var linkHere = links[i + index];
+				if (linkHere) {
+					await page.goto(linkHere, {
+						waitUntil: "domcontentloaded",
+						timeout: 0
+					});
+
+					var hackEntry = await pageCallback(page);
+
+					if (hackEntry) {
+						hackEntry.url = linkHere;
+
+						console.log(hackEntry);
+
+						allHackEntries.push(hackEntry);
+					}
+				}
+			})(page, index);
+
+			cachePagePromises.push(ret);
+		});
+
+		await Promise.all(cachePagePromises);
+
+		i += cachePages.length;
+	} while (i < links.length);
+}
+
 async function pokemonArchive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://pokemonromhack.com/list", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://pokemonromhack.com/list", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
-	var links = await page.evaluate(() => {
+	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = Array.from(document.getElementsByTagName('a'), a => a.href);
 		allLinks = allLinks.slice(21, allLinks.length - 125);
 		return allLinks;
@@ -18,12 +57,8 @@ async function pokemonArchive1(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var system = document.getElementsByClassName("entry-categories")[0].firstElementChild.innerText.split(" ")[0];
 			return {
 				name: document.getElementsByTagName("h1")[0].innerText,
@@ -38,26 +73,20 @@ async function pokemonArchive1(browser) {
 				important: false
 			}
 		});
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 };
 
 async function generalArchive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://www.romhacking.net/?page=hacks&perpage=200", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
 	var links = [];
 	var start = 1;
 
 	while (true) {
-		var partialLinks = await page.evaluate(() => {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
 			var allLinks = Array.from(document.getElementsByClassName("col_1 Title"), a => a.firstElementChild.href);
 			allLinks = allLinks.slice(1, allLinks.length);
 			return allLinks;
@@ -65,7 +94,7 @@ async function generalArchive1(browser) {
 
 		links = links.concat(partialLinks);
 
-		var parts = await page.evaluate(() => {
+		var parts = await mainBrowserPage.evaluate(() => {
 			return document.getElementsByTagName("caption")[0].innerText.split(" ");
 		});
 		parts[2] = parts[2].slice(0, -1);
@@ -75,7 +104,7 @@ async function generalArchive1(browser) {
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await page.goto("https://www.romhacking.net/?page=hacks&perpage=200&startpage=" + start, {
+			await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200&startpage=" + start, {
 				waitUntil: "domcontentloaded"
 			});
 		}
@@ -83,12 +112,8 @@ async function generalArchive1(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementById("main").firstElementChild.firstElementChild.firstElementChild.innerText,
 				author: document.getElementsByTagName("td")[1].firstElementChild.innerText,
@@ -107,32 +132,26 @@ async function generalArchive1(browser) {
 
 			return temp;
 		});
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 }
 
 async function smwArchive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
 	var links = [];
 	var start = 1;
 
 	while (true) {
-		var partialLinks = await page.evaluate(() => {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
 			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
 		});
 
 		links = links.concat(partialLinks);
 
-		var nextButtonImg = await page.evaluate(() => {
+		var nextButtonImg = await mainBrowserPage.evaluate(() => {
 			return document.getElementsByTagName("img")[10].src;
 		});
 
@@ -142,7 +161,7 @@ async function smwArchive1(browser) {
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await page.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
+			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
 				waitUntil: "domcontentloaded"
 			});
 		}
@@ -150,12 +169,8 @@ async function smwArchive1(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementsByClassName("cell2")[0].innerText,
 				author: document.getElementsByClassName("cell2")[3].innerText,
@@ -181,32 +196,26 @@ async function smwArchive1(browser) {
 
 			return temp;
 		});
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 }
 
 async function sm64Archive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://www.smwcentral.net/?p=section&s=sm64hacks", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
 	var links = [];
 	var start = 1;
 
 	while (true) {
-		var partialLinks = await page.evaluate(() => {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
 			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
 		});
 
 		links = links.concat(partialLinks);
 
-		var nextButtonImg = await page.evaluate(() => {
+		var nextButtonImg = await mainBrowserPage.evaluate(() => {
 			return document.getElementsByTagName("img")[10].src;
 		});
 
@@ -216,7 +225,7 @@ async function sm64Archive1(browser) {
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await page.goto("https://www.smwcentral.net/?p=section&s=sm64hacks&n=" + start, {
+			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks&n=" + start, {
 				waitUntil: "domcontentloaded"
 			});
 		}
@@ -224,12 +233,8 @@ async function sm64Archive1(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementsByClassName("cell2")[0].innerText,
 				release: document.getElementsByClassName("cell2")[1].innerText.split(" ")[0],
@@ -254,32 +259,26 @@ async function sm64Archive1(browser) {
 
 			return temp;
 		});
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 }
 
 async function yoshisIslandArchive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://www.smwcentral.net/?p=section&s=yihacks", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
 	var links = [];
 	var start = 1;
 
 	while (true) {
-		var partialLinks = await page.evaluate(() => {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
 			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
 		});
 
 		links = links.concat(partialLinks);
 
-		var nextButtonImg = await page.evaluate(() => {
+		var nextButtonImg = await mainBrowserPage.evaluate(() => {
 			return document.getElementsByTagName("img")[10].src;
 		});
 
@@ -289,7 +288,7 @@ async function yoshisIslandArchive1(browser) {
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await page.goto("https://www.smwcentral.net/?p=section&s=yihacks&n=" + start, {
+			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks&n=" + start, {
 				waitUntil: "domcontentloaded"
 			});
 		}
@@ -297,12 +296,8 @@ async function yoshisIslandArchive1(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementsByClassName("cell2")[0].innerText,
 				author: document.getElementsByClassName("cell2")[3].innerText,
@@ -328,32 +323,26 @@ async function yoshisIslandArchive1(browser) {
 
 			return temp;
 		});
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 }
 
 async function sm64Archive2(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
-	var links = await page.evaluate(() => {
+	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 4; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
-		Array.from(document.getElementById("mw-content-text").children).forEach(function (element) {
+		Array.from(document.getElementById("mw-content-text").children).forEach(function(element) {
 			if (haveReachedPoint) {
 				if (element.firstElementChild && element.firstElementChild.tagName === "A") {
 					var href = element.firstElementChild.href;
@@ -373,17 +362,13 @@ async function sm64Archive2(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
 		var shouldInclude = await page.evaluate(() => {
 			return document.getElementsByClassName("pi-data-value pi-font").length != 0;
 		});
 
 		if (shouldInclude) {
-			var hackEntry = await page.evaluate(() => {
+			return page.evaluate(() => {
 				var temp = {
 					name: document.getElementsByClassName("page-header__title")[0].innerText,
 					author: document.getElementsByClassName("pi-data-value pi-font")[0].innerText.split(" ")[0],
@@ -403,27 +388,23 @@ async function sm64Archive2(browser) {
 
 				return temp;
 			});
-
-			hackEntry.url = links[i];
-
-			console.log(hackEntry);
-
-			allHackEntries.push(hackEntry);
+		} else {
+			return undefined;
 		}
-	}
+	});
 };
 
 async function sm64DSArchive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
-	var links = await page.evaluate(() => {
+	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 5; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
@@ -433,17 +414,13 @@ async function sm64DSArchive1(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
 		var shouldInclude = await page.evaluate(() => {
 			return document.getElementsByClassName("pi-data-value pi-font").length != 0;
 		});
 
 		if (shouldInclude) {
-			var hackEntry = await page.evaluate(() => {
+			return page.evaluate(() => {
 				var temp = {
 					name: document.getElementsByClassName("page-header__title")[0].innerText,
 					author: document.getElementsByClassName("pi-data-value pi-font")[0].innerText.split(" ")[0],
@@ -463,23 +440,19 @@ async function sm64DSArchive1(browser) {
 
 				return temp;
 			});
-
-			hackEntry.url = links[i];
-
-			console.log(hackEntry);
-
-			allHackEntries.push(hackEntry);
+		} else {
+			return undefined;
 		}
-	}
+	});
 };
 
 async function pokemonArchive2(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
-	var links = await page.evaluate(() => {
+	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = Array.from(document.getElementsByClassName("item"), a => a.parentElement.href);
 		// Only include ones with pages
 		allLinks = allLinks.filter(item => item.indexOf("www.gbahacks.com") !== -1);
@@ -488,16 +461,13 @@ async function pokemonArchive2(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		var hackEntry;
 
 		var isNormalLayout = await page.evaluate(() => {
 			return document.getElementsByClassName("pblock").length != 0;
 		});
 
-		var hackEntry;
 		if (isNormalLayout) {
 			// New layout
 			hackEntry = await page.evaluate(() => {
@@ -571,33 +541,25 @@ async function pokemonArchive2(browser) {
 			});
 		}
 
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+		return hackEntry;
+	});
 };
 
 async function smspowerArchive1(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://www.smspower.org/Hacks/GameModifications", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://www.smspower.org/Hacks/GameModifications", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
-	var links = await page.evaluate(() => {
+	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = Array.from(document.getElementsByTagName("h3"), a => a.firstElementChild.href);
 		return allLinks;
 	});
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var systemMapping = {
 				"Mod (SMS)": "Sega Master System",
 				"Mod (GG)": "Sega Game Gear"
@@ -616,27 +578,20 @@ async function smspowerArchive1(browser) {
 				important: false
 			}
 		});
-
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 };
 
 async function atari2600Archive(browser) {
-	const page = await browser.newPage();
-	await page.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
-		waitUntil: "domcontentloaded"
+	await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
 	});
 
 	var links = [];
 	var start = 0;
 
 	while (true) {
-		var partialLinks = await page.evaluate(() => {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
 			var allLinks = Array.from(document.getElementsByTagName("tbody")[17].children);
 			allLinks = allLinks.slice(1, allLinks.length - 1).map(a => a.firstElementChild.firstElementChild.href);
 			return allLinks;
@@ -644,7 +599,7 @@ async function atari2600Archive(browser) {
 
 		links = links.concat(partialLinks);
 
-		var shouldBreak = await page.evaluate(() => {
+		var shouldBreak = await mainBrowserPage.evaluate(() => {
 			var table = document.querySelector("[valign='top'][align='left']").children;
 			return table[table.length - 4].innerText !== "Next";
 		});
@@ -655,7 +610,7 @@ async function atari2600Archive(browser) {
 		} else {
 			console.log("Handled page " + (start + 1));
 			start++;
-			await page.goto("https://atariage.com/software_hacks.php?SystemID=2600&currentPage=" + start, {
+			await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600&currentPage=" + start, {
 				waitUntil: "domcontentloaded"
 			});
 		}
@@ -663,12 +618,8 @@ async function atari2600Archive(browser) {
 
 	console.log(links);
 
-	for (let i = 0; i < links.length; i++) {
-		await page.goto(links[i], {
-			waitUntil: "domcontentloaded"
-		});
-
-		var hackEntry = await page.evaluate(() => {
+	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+		return page.evaluate(() => {
 			var infoTable = document.querySelector("[cellspacing='0'][cellpadding='4']").firstElementChild.children;
 
 			var temp = {
@@ -684,17 +635,16 @@ async function atari2600Archive(browser) {
 
 			return temp;
 		});
-
-		hackEntry.url = links[i];
-
-		console.log(hackEntry);
-
-		allHackEntries.push(hackEntry);
-	}
+	});
 }
 
 (async () => {
-	const browser = await puppeteer.launch();
+	browser = await puppeteer.launch();
+	mainBrowserPage = await browser.newPage();
+
+	for (let i = 0; i < 30; i++) {
+		cachePages.push(await browser.newPage());
+	}
 
 	console.log("Browser opened");
 

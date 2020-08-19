@@ -1,6 +1,7 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const XLSX = require("node-xlsx");
+const axios = require("axios");
 
 var allHackEntries = [];
 
@@ -13,8 +14,8 @@ async function handleWebpageTemplate(links, pageCallback) {
 	do {
 		cachePagePromises = [];
 
-		cachePages.forEach(function(page, index) {
-			var ret = (async function(page, index) {
+		cachePages.forEach(function (page, index) {
+			var ret = (async function (page, index) {
 				var linkHere = links[i + index];
 				if (linkHere) {
 					await page.goto(linkHere, {
@@ -22,7 +23,7 @@ async function handleWebpageTemplate(links, pageCallback) {
 						timeout: 0
 					});
 
-					var hackEntry = await pageCallback(page);
+					var hackEntry = await pageCallback(page, linkHere);
 
 					if (hackEntry) {
 						hackEntry.url = linkHere;
@@ -336,13 +337,13 @@ async function sm64Archive2() {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 4; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
-		Array.from(document.getElementById("mw-content-text").children).forEach(function(element) {
+		Array.from(document.getElementById("mw-content-text").children).forEach(function (element) {
 			if (haveReachedPoint) {
 				if (element.firstElementChild && element.firstElementChild.tagName === "A") {
 					var href = element.firstElementChild.href;
@@ -404,7 +405,7 @@ async function sm64DSArchive1() {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 5; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
@@ -636,6 +637,75 @@ async function atari2600Archive() {
 			return temp;
 		});
 	});
+}
+
+async function gamebananaProjectsArchive() {
+	// TODO use https://gamebanana.com/projects/35468?api=StructuredDataModule
+	// https://github.com/axios/axios
+	// https://www.twilio.com/blog/5-ways-to-make-http-requests-in-node-js-using-async-await
+	/*
+	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var links = [];
+	var start = 1;
+
+	while (true) {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
+			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
+		});
+
+		links = links.concat(partialLinks);
+
+		var nextButtonImg = await mainBrowserPage.evaluate(() => {
+			return document.getElementsByTagName("img")[10].src;
+		});
+
+		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif") {
+			// This is the last page
+			break;
+		} else {
+			console.log("Handled page " + start);
+			start++;
+			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
+				waitUntil: "domcontentloaded"
+			});
+		}
+	}
+
+	console.log(links);
+
+	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+		return page.evaluate(() => {
+			var temp = {
+				name: document.getElementsByClassName("cell2")[0].innerText,
+				author: document.getElementsByClassName("cell2")[3].innerText,
+				release: document.getElementsByClassName("cell2")[1].innerText.split(" ")[0],
+				originalgame: "Super Mario World",
+				system: "SNES",
+				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, "")
+			}
+
+			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
+				temp.type = document.getElementsByClassName("cell2")[7].innerText;
+				temp.author = document.getElementsByClassName("cell2")[3].innerText;
+			} else {
+				temp.type = document.getElementsByClassName("cell2")[6].innerText;
+				temp.author = document.getElementsByClassName("cell2")[2].innerText;
+			}
+
+			if (parseInt(temp.downloads) > 1000) {
+				temp.important = true;
+			} else {
+				temp.important = false;
+			}
+
+			return temp;
+		});
+	});
+	*/
 }
 
 (async () => {

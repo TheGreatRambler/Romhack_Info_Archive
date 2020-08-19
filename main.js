@@ -9,24 +9,38 @@ var browser;
 var mainBrowserPage;
 var cachePages = [];
 
-async function handleWebpageTemplate(links, pageCallback) {
+async function handleWebpageTemplate(links, pageCallback, type) {
 	var i = 0;
 	do {
 		cachePagePromises = [];
 
-		cachePages.forEach(function (page, index) {
-			var ret = (async function (page, index) {
+		cachePages.forEach(function(page, index) {
+			var ret = (async function(page, index) {
 				var linkHere = links[i + index];
 				if (linkHere) {
-					await page.goto(linkHere, {
-						waitUntil: "domcontentloaded",
-						timeout: 0
-					});
+					var json;
+					if (type === "html") {
+						await page.goto(linkHere, {
+							waitUntil: "domcontentloaded",
+							timeout: 0
+						});
+					} else if (type === "json") {
+						json = await axios.get(linkHere);
+					}
 
-					var hackEntry = await pageCallback(page, linkHere);
+					var hackEntry;
+
+
+					if (type === "html") {
+						hackEntry = await pageCallback(page, linkHere);
+					} else if (type === "json") {
+						hackEntry = await pageCallback(json.data, linkHere);
+					}
 
 					if (hackEntry) {
-						hackEntry.url = linkHere;
+						if (type === "html") {
+							hackEntry.url = linkHere;
+						}
 
 						console.log(hackEntry);
 
@@ -74,7 +88,7 @@ async function pokemonArchive1() {
 				important: false
 			}
 		});
-	});
+	}, "html");
 };
 
 async function generalArchive1() {
@@ -133,7 +147,7 @@ async function generalArchive1() {
 
 			return temp;
 		});
-	});
+	}, "html");
 }
 
 async function smwArchive1() {
@@ -197,7 +211,7 @@ async function smwArchive1() {
 
 			return temp;
 		});
-	});
+	}, "html");
 }
 
 async function sm64Archive1() {
@@ -260,7 +274,7 @@ async function sm64Archive1() {
 
 			return temp;
 		});
-	});
+	}, "html");
 }
 
 async function yoshisIslandArchive1() {
@@ -324,7 +338,7 @@ async function yoshisIslandArchive1() {
 
 			return temp;
 		});
-	});
+	}, "html");
 }
 
 async function sm64Archive2() {
@@ -337,13 +351,13 @@ async function sm64Archive2() {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 4; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
-		Array.from(document.getElementById("mw-content-text").children).forEach(function (element) {
+		Array.from(document.getElementById("mw-content-text").children).forEach(function(element) {
 			if (haveReachedPoint) {
 				if (element.firstElementChild && element.firstElementChild.tagName === "A") {
 					var href = element.firstElementChild.href;
@@ -392,7 +406,7 @@ async function sm64Archive2() {
 		} else {
 			return undefined;
 		}
-	});
+	}, "html");
 };
 
 async function sm64DSArchive1() {
@@ -405,7 +419,7 @@ async function sm64DSArchive1() {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 5; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
@@ -444,7 +458,7 @@ async function sm64DSArchive1() {
 		} else {
 			return undefined;
 		}
-	});
+	}, "html");
 };
 
 async function pokemonArchive2() {
@@ -543,7 +557,7 @@ async function pokemonArchive2() {
 		}
 
 		return hackEntry;
-	});
+	}, "html");
 };
 
 async function smspowerArchive1() {
@@ -579,7 +593,7 @@ async function smspowerArchive1() {
 				important: false
 			}
 		});
-	});
+	}, "html");
 };
 
 async function atari2600Archive() {
@@ -636,76 +650,54 @@ async function atari2600Archive() {
 
 			return temp;
 		});
-	});
+	}, "html");
 }
 
 async function gamebananaProjectsArchive() {
 	// TODO use https://gamebanana.com/projects/35468?api=StructuredDataModule
 	// https://github.com/axios/axios
 	// https://www.twilio.com/blog/5-ways-to-make-http-requests-in-node-js-using-async-await
-	/*
-	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
-		waitUntil: "domcontentloaded",
-		timeout: 0
-	});
+	var projectList = (await axios.get("https://gamebanana.com/projects?vl[page]=1&mid=SubmissionsList&/projects=&api=SubmissionsListModule")).data;
 
 	var links = [];
 	var start = 1;
 
 	while (true) {
-		var partialLinks = await mainBrowserPage.evaluate(() => {
-			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
-		});
+		var partialLinks = projectList._aCellValues.filter(project => project._aGame._sName !== "GameBanana").map(project => "https://gamebanana.com/projects/" + project._idItemRow + "?api=StructuredDataModule");
 
 		links = links.concat(partialLinks);
 
-		var nextButtonImg = await mainBrowserPage.evaluate(() => {
-			return document.getElementsByTagName("img")[10].src;
-		});
-
-		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif") {
+		if (projectList._aCellValues.length === 0) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
-				waitUntil: "domcontentloaded"
-			});
+			var projectList = (await axios.get("https://gamebanana.com/projects?vl[page]=" + start + "&mid=SubmissionsList&/projects=&api=SubmissionsListModule")).data;
 		}
 	}
 
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
-		return page.evaluate(() => {
-			var temp = {
-				name: document.getElementsByClassName("cell2")[0].innerText,
-				author: document.getElementsByClassName("cell2")[3].innerText,
-				release: document.getElementsByClassName("cell2")[1].innerText.split(" ")[0],
-				originalgame: "Super Mario World",
-				system: "SNES",
-				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, "")
-			}
-
-			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
-				temp.type = document.getElementsByClassName("cell2")[7].innerText;
-				temp.author = document.getElementsByClassName("cell2")[3].innerText;
-			} else {
-				temp.type = document.getElementsByClassName("cell2")[6].innerText;
-				temp.author = document.getElementsByClassName("cell2")[2].innerText;
-			}
-
-			if (parseInt(temp.downloads) > 1000) {
-				temp.important = true;
-			} else {
-				temp.important = false;
-			}
-
-			return temp;
-		});
-	});
-	*/
+	await handleWebpageTemplate(links, async function returnHackEntry(jsondata, link) {
+		if (typeof jsondata !== "string") {
+			var id = link.split("?")[0].replace("https://gamebanana.com/projects/", "");
+			var statsData = (await axios.get("https://gamebanana.com/projects/" + id + "?api=StatsModule")).data;
+			return {
+				name: jsondata.name,
+				author: jsondata.author.name,
+				release: jsondata.datePublished.split("T")[0],
+				originalgame: jsondata.isPartOf.name,
+				system: jsondata.isPartOf.gamePlatform,
+				downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
+				type: (await axios.get("https://gamebanana.com/projects/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
+				url: "https://gamebanana.com/projects/" + id
+			};
+		} else {
+			// Some projects are listed as private for some reason
+			return undefined;
+		}
+	}, "json");
 }
 
 (async () => {
@@ -747,6 +739,9 @@ async function gamebananaProjectsArchive() {
 
 	// https://atariage.com/software_hacks.php?SystemID=2600
 	await atari2600Archive();
+
+	// https://gamebanana.com/projects?mid=SubmissionsList
+	await gamebananaProjectsArchive();
 
 	const additionalHacks = require("./additional.js");
 	console.log(additionalHacks);

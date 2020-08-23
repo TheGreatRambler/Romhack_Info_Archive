@@ -14,8 +14,8 @@ async function handleWebpageTemplate(links, pageCallback, type) {
 	do {
 		cachePagePromises = [];
 
-		cachePages.forEach(function(page, index) {
-			var ret = (async function(page, index) {
+		cachePages.forEach(function (page, index) {
+			var ret = (async function (page, index) {
 				var linkHere = links[i + index];
 				if (linkHere) {
 					var json;
@@ -351,13 +351,13 @@ async function sm64Archive2() {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 4; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
-		Array.from(document.getElementById("mw-content-text").children).forEach(function(element) {
+		Array.from(document.getElementById("mw-content-text").children).forEach(function (element) {
 			if (haveReachedPoint) {
 				if (element.firstElementChild && element.firstElementChild.tagName === "A") {
 					var href = element.firstElementChild.href;
@@ -419,7 +419,7 @@ async function sm64DSArchive1() {
 		var allLinks = [];
 
 		for (var tables = 0; tables < 5; tables++) {
-			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function(element, index) {
+			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 				return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 			}).map(element => element.firstElementChild.firstElementChild.href));
 		}
@@ -700,6 +700,83 @@ async function gamebananaProjectsArchive() {
 	}, "json");
 }
 
+async function moddbArchive() {
+	await mainBrowserPage.goto("https://www.moddb.com/mods", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var links = [];
+	var start = 1;
+
+	while (true) {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
+			var allLinks = Array.from(document.getElementsByClassName("rowcontent")).map(project => project.children[1].children[1].firstElementChild.href);
+			return allLinks;
+		});
+
+		links = links.concat(partialLinks);
+
+		var shouldBreak = await mainBrowserPage.evaluate(() => {
+			var parts = document.getElementsByClassName("heading")[0].innerText.split(" ");
+			return parts[3] === parts[5].replace(",", "").replace(")", "");
+		});
+
+		if (shouldBreak) {
+			// This is the last page
+			break;
+		} else {
+			console.log("Handled page " + (start + 1));
+			start++;
+			await mainBrowserPage.goto("https://www.moddb.com/mods/page/" + start + "#modsbrowse", {
+				waitUntil: "domcontentloaded"
+			});
+		}
+	}
+
+	console.log(links);
+
+	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+		var part = await page.evaluate(() => {
+			var gameElement = document.getElementsByClassName("summary")[4];
+			var tagsContainer = Array.from(document.querySelector("[name='tagsform']").children);
+			tagsContainer = tagsContainer.slice(1, tagsContainer.length);
+
+			var temp = {
+				name: document.querySelector("[itemprop='mainEntityOfPage']").innerText,
+				author: document.querySelector("[itemprop='author']").innerText,
+				release: document.querySelector("[itemprop='datePublished']").dateTime.split("T")[0],
+				originalgame: gameElement.innerText,
+				system: gameElement.firstElementChild.href,
+				type: tagsContainer.map(tag => tag.innerText).join(" | "),
+				important: false
+			}
+
+			return temp;
+		});
+
+		await page.goto(link + "/downloads", {
+			waitUntil: "domcontentloaded",
+			timeout: 0
+		});
+
+		part.downloads = await page.evaluate(() => {
+			return document.getElementsByClassName("tablemenu")[1].children[2].children[1].innerText;
+		});
+
+		await page.goto(part.system, {
+			waitUntil: "domcontentloaded",
+			timeout: 0
+		});
+
+		part.system = await page.evaluate(() => {
+			return document.querySelector("[itemprop='operatingSystem']").innerText;
+		});
+
+		return part;
+	}, "html");
+}
+
 (async () => {
 	browser = await puppeteer.launch();
 	mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
@@ -710,6 +787,7 @@ async function gamebananaProjectsArchive() {
 
 	console.log("Browser opened");
 
+	/*
 	// https://pokemonromhack.com/list
 	await pokemonArchive1();
 
@@ -742,6 +820,10 @@ async function gamebananaProjectsArchive() {
 
 	// https://gamebanana.com/projects?mid=SubmissionsList
 	await gamebananaProjectsArchive();
+	*/
+
+	// https://www.moddb.com/mods
+	await moddbArchive();
 
 	const additionalHacks = require("./additional.js");
 	console.log(additionalHacks);

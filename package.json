@@ -12,6 +12,7 @@
 	"author": "TheGreatRambler",
 	"dependencies": {
 		"axios": "^0.19.2",
+		"moment": "^2.29.1",
 		"node-xlsx": "^0.15.0",
 		"puppeteer": "^5.2.1"
 	}

@@ -1,14 +1,25 @@
-const puppeteer = require ("puppeteer");
-const fs        = require ("fs");
-const XLSX      = require ("node-xlsx");
-const axios     = require ("axios");
-const moment    = require ("moment");
+const fs     = require ("fs");
+const axios  = require ("axios");
+const moment = require ("moment");
+
+const puppeteer = require ("puppeteer-extra");
+
+const StealthPlugin = require ("puppeteer-extra-plugin-stealth");
+puppeteer.use(StealthPlugin ());
+
+const AdblockerPlugin = require ("puppeteer-extra-plugin-adblocker");
+puppeteer.use(AdblockerPlugin ({ blockTrackers: true }));
 
 var allHackEntries = [];
+
+var csvWriter;
 
 var browser;
 var mainBrowserPage;
 var cachePages = [];
+
+var cacheSize      = 8;
+var cacheFlushSize = cacheSize * 1000;
 
 async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 	var i = 0;
@@ -60,7 +71,12 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 
 		await Promise.all(cachePagePromises);
 
-		i += cachePages.length;
+		// Occassionally, to preserve memory
+		if (i % cacheFlushSize === 0) {
+			dumpCurrentData ();
+		}
+
+		i += cacheSize;
 	} while (i < links.length);
 }
 
@@ -92,7 +108,8 @@ async function pokemonArchive1 () {
 					downloads: null,
 					type: null,
 					// We can't know
-					important: false
+					important: false,
+					source: "pokemonromhack list"
 			}
 		});
 	}, "html", "YYYY");
@@ -145,6 +162,7 @@ async function generalArchive1 () {
 				system: document.getElementsByTagName("td")[3].firstElementChild.innerText,
 				downloads: document.getElementsByTagName("td")[10].innerText,
 				type: document.getElementsByTagName("td")[5].innerText,
+				source: "romhacking.net"
 			};
 
 			if (parseInt (temp.downloads) > 1000) {
@@ -201,7 +219,8 @@ async function smwArchive1 () {
 				release: document.getElementsByClassName("cell2")[1].innerText.split(" ")[0],
 				originalgame: "Super Mario World",
 				system: "SNES",
-				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, "")
+				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, ""),
+				source: "smwcentral.net smw"
 			}
 
 			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
@@ -266,7 +285,8 @@ async function sm64Archive1 () {
 				release: document.getElementsByClassName("cell2")[1].innerText.split(" ")[0],
 				originalgame: "Super Mario 64",
 				system: "N64",
-				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, "")
+				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, ""),
+				source: "smwcentral.net sm64"
 			}
 
 			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
@@ -332,7 +352,8 @@ async function yoshisIslandArchive1 () {
 				release: document.getElementsByClassName("cell2")[1].innerText.split(" ")[0],
 				originalgame: "Super Mario World",
 				system: "SNES",
-				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, "")
+				downloads: document.getElementsByClassName("small")[0].innerText.split(" ")[0].replace(/\,/g, ""),
+				source: "smwcentral.net yoshi's island"
 			}
 
 			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
@@ -407,6 +428,7 @@ async function sm64Archive2 () {
 					system: "N64",
 					downloads: null,
 					type: null,
+					source: "mario64hacks wiki sm64"
 				};
 
 				if (document.getElementsByClassName("pi-data-label pi-secondary-font")[1].innerText === "Published") {
@@ -461,6 +483,7 @@ async function sm64DSArchive1 () {
 					system: "NDS",
 					downloads: null,
 					type: null,
+					source: "mario64hacks wiki sm64ds"
 				};
 
 				if (document.getElementsByClassName("pi-data-label pi-secondary-font")[1].innerText === "Published") {
@@ -523,7 +546,8 @@ async function pokemonArchive2 () {
 						downloads: null,
 						type: null,
 						// We can't know
-						important: false
+						important: false,
+						source: "gbahacks.com"
 					};
 				} else {
 					return {
@@ -570,7 +594,8 @@ async function pokemonArchive2 () {
 						downloads: null,
 						type: null,
 						// We can't know
-						important: false
+						important: false,
+						source: "gbahacks.com"
 				}
 			});
 		}
@@ -610,7 +635,8 @@ async function smspowerArchive1 () {
 					downloads: null,
 					type: null,
 					// We can't know
-					important: false
+					important: false,
+					source: "smspower.org"
 			}
 		});
 	}, "html", "YYYY");
@@ -666,7 +692,8 @@ async function atari2600Archive () {
 				system: "Atari 2600",
 				type: infoTable[2].children[1].firstElementChild.alt,
 				downloads: null,
-				important: false
+				important: false,
+				source: "atariage.com 2600"
 			}
 
 			return temp;
@@ -716,7 +743,8 @@ async function gamebananaProjectsArchive () {
 				// View count is an option?? Maybe use it???
 				downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
 				type: (await axios.get("https://gamebanana.com/projects/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
-				url: "https://gamebanana.com/projects/" + id
+				url: "https://gamebanana.com/projects/" + id,
+				source: "gamebanana projects"
 			};
 		} else {
 			// Some projects are listed as private for some reason
@@ -725,7 +753,7 @@ async function gamebananaProjectsArchive () {
 	}, "json", "YYYYMMDD");
 }
 
-async function moddbArchive () {
+async function moddbModsArchive () {
 	await mainBrowserPage.goto("https://www.moddb.com/mods", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -736,6 +764,7 @@ async function moddbArchive () {
 
 	while (true) {
 		var partialLinks = await mainBrowserPage.evaluate(() => {
+			// Some addons are bundled with mods, we don't need that
 			var allLinks = Array.from(document.getElementsByClassName("rowcontent")).map(project => project.children[1].children[1].firstElementChild.href);
 			return allLinks;
 		});
@@ -747,11 +776,11 @@ async function moddbArchive () {
 			return parts[3] === parts[5].replace(",", "").replace(")", "");
 		});
 
-		if (shouldBreak) {
+		if (shouldBreak || start === 10) {
 			// This is the last page
 			break;
 		} else {
-			console.log("Handled page " + (start + 1));
+			console.log("Handled page " + start);
 			start++;
 			await mainBrowserPage.goto("https://www.moddb.com/mods/page/" + start + "#modsbrowse", {
 				waitUntil: "domcontentloaded"
@@ -759,23 +788,34 @@ async function moddbArchive () {
 		}
 	}
 
-	console.log("ModDB Archive Length: " + links.length);
+	console.log("ModDB Mods Archive Length: " + links.length);
 	console.log(links);
 
 	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var part = await page.evaluate(() => {
-			var gameElement   = document.getElementsByClassName("summary")[4];
-			var tagsContainer = Array.from(document.querySelector("[name='tagsform']").children);
-			tagsContainer     = tagsContainer.slice(1, tagsContainer.length);
+			var rowList = Array.from(document.getElementsByClassName("row clear"));
+
+			var release        = null;
+			var releaseElement = rowList.filter(item => item.firstElementChild.innerText === "Release date")[0].children[1].firstElementChild;
+			if (releaseElement.innerText !== "TBD") {
+				release = releaseElement.dateTime;
+			}
+
+			var typeString = Array.from(document.getElementById("tagsform").children[1].firstElementChild.children).slice(1).map(tag => tag.innerText).join(", ");
+			if (typeString.includes(" has not been tagged yet")) {
+				typeString = null;
+			}
 
 			var temp = {
-				name: document.querySelector("[itemprop='mainEntityOfPage']").innerText,
-				author: document.querySelector("[itemprop='author']").innerText,
-				release: document.querySelector("[itemprop='datePublished']").dateTime.split("T")[0],
-				originalgame: gameElement.innerText,
-				system: gameElement.firstElementChild.href,
-				type: tagsContainer.map(tag => tag.innerText).join(" | "),
-				important: false
+				name: document.getElementsByClassName("title")[0].firstElementChild.textContent,
+				author: rowList.filter(item => item.firstElementChild.innerText === "Creator" || item.firstElementChild.innerText === "Developer")[0].children[1].innerText,
+				release: release === "TBD" ? null : release,
+				originalgame: rowList.filter(item => item.firstElementChild.innerText === "Game")[0].children[1].innerText,
+				// I couldn't find it
+				system: null,
+				type: typeString,
+				important: false,
+				source: "moddb mods"
 			}
 
 			return temp;
@@ -787,23 +827,90 @@ async function moddbArchive () {
 		});
 
 		part.downloads = await page.evaluate(() => {
-			return document.getElementsByClassName("tablemenu")[1].children[2].children[1].innerText;
+			var rowList = Array.from(document.getElementsByClassName("row clear"));
+			return parseInt (rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""));
 		});
 
-		// Sometimes can be null, I dunno
-		if (part.system) {
-			await page.goto(part.system, {
-				waitUntil: "domcontentloaded",
-				timeout: 0
-			});
+		return part;
+	}, "html", "MMMMDDYYYY");
+}
 
-			part.system = await page.evaluate(() => {
-				return document.querySelector("[itemprop='operatingSystem']").innerText;
+async function moddbAddonsArchive () {
+	await mainBrowserPage.goto("https://www.moddb.com/addons", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var links = [];
+	var start = 1;
+
+	while (true) {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
+			// Some addons are bundled with mods, we don't need that
+			var allLinks = Array.from(document.getElementsByClassName("rowcontent")).map(project => project.children[1].children[1].firstElementChild.href).filter(link => link && !link.includes("/mods/"))
+			return allLinks;
+		});
+
+		links = links.concat(partialLinks);
+
+		var shouldBreak = await mainBrowserPage.evaluate(() => {
+			var parts = document.getElementsByClassName("heading")[0].innerText.split(" ");
+			return parts[3] === parts[5].replace(",", "").replace(")", "");
+		});
+
+		if (shouldBreak || start === 10) {
+			// This is the last page
+			break;
+		} else {
+			console.log("Handled page " + start);
+			start++;
+			await mainBrowserPage.goto("https://www.moddb.com/addons/page/" + start + "#addonsbrowse", {
+				waitUntil: "domcontentloaded"
 			});
 		}
+	}
+
+	console.log("ModDB Addons Archive Length: " + links.length);
+	console.log(links);
+
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
+		var part = await page.evaluate(() => {
+			var rowList = Array.from(document.getElementsByClassName("row clear"));
+
+			var typeString = Array.from(document.getElementById("tagsform").children[1].firstElementChild.children).slice(1).map(tag => tag.innerText).join(", ");
+			if (typeString.includes(" has not been tagged yet")) {
+				typeString = null;
+			}
+
+			var release = rowList.filter(item => item.firstElementChild.innerText === "Added")[0].children[1].innerText;
+
+			var temp = {
+				name: document.getElementsByClassName("heading")[0].innerText,
+				author: rowList.filter(item => item.firstElementChild.innerText === "Uploader")[0].children[1].innerText,
+				release: release === "TBD" ? null : release,
+				originalgame: document.getElementsByClassName("title")[0].firstElementChild.innerText,
+				system: rowList.filter(item => item.firstElementChild.innerText === "Platforms")[0].children[1].innerText,
+				type: typeString,
+				important: false,
+				downloads: rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""),
+				source: "moddb addons"
+			}
+
+			return temp;
+		});
+
+		await page.goto(link + "/downloads", {
+			waitUntil: "domcontentloaded",
+			timeout: 0
+		});
+
+		part.downloads = await page.evaluate(() => {
+			var rowList = Array.from(document.getElementsByClassName("row clear"));
+			return parseInt (rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""));
+		});
 
 		return part;
-	}, "html", "YYYYMMDD");
+	}, "html", ["YYYY", "MMMMYYYY", "MMMMDDYYYY"]);
 }
 
 async function brawlVaultArchive () {
@@ -850,7 +957,8 @@ async function brawlVaultArchive () {
 					downloads: parseInt (hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
 					type: hackContainer.children[authors.length + 4].innerText.slice(1, -1),
 					// None have dedicated pages, redirect to master page
-					url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack"
+					url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack",
+					source: "brawlvault"
 				});
 			});
 
@@ -892,7 +1000,8 @@ async function quakeWikiArchive () {
 				system: "PC",
 				type: null,
 				important: false,
-				downloads: parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", ""))
+				downloads: parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", "")),
+				source: "archived quakewiki.net"
 			};
 		});
 		temp.url = link;
@@ -935,7 +1044,8 @@ async function nexusModsArchive () {
 					system: "PC",
 					downloads: downloadNumber,
 					type: container.children[2].children[1].children[1].children[0].children[1].innerText,
-					url: container.children[2].children[1].children[0].firstChild.href
+					url: container.children[2].children[1].children[0].firstChild.href,
+					source: "nexusmods"
 				});
 			});
 
@@ -961,61 +1071,291 @@ async function nexusModsArchive () {
 	}
 }
 
+async function curseforgeArchive (type) {
+	var urlBase;
+	var game;
+	var system;
+
+	// Every game supported by curseforge
+	var urlMatcher = {
+		"mc-mod": ["https://www.curseforge.com/minecraft/mc-mods", "Minecraft", "PC"],
+		"mc-plugin": ["https://www.curseforge.com/minecraft/bukkit-plugins", "Minecraft", "PC"],
+		"wow": ["https://www.curseforge.com/wow/addons", "World of Warcraft", "PC"],
+		"sc2": ["https://www.curseforge.com/sc2/assets", "StarCraft II", "PC"],
+		"ksp": ["https://www.curseforge.com/kerbal/ksp-mods", "Kerbal Space Program", "PC"],
+		"ws": ["https://www.curseforge.com/wildstar/ws-addons", "WildStar", "PC"],
+		"terraria": ["https://www.curseforge.com/terraria/maps", "Terraria", "PC"],
+		"wot": ["https://www.curseforge.com/worldoftanks/wot-mods", "World of Tanks", "PC"],
+		"rom": ["https://www.curseforge.com/rom/addons", "Runes of Magic", "PC"],
+		"rift": ["https://www.curseforge.com/rift/addons", "Rift", "PC"],
+		"skyrim": ["https://www.curseforge.com/skyrim/mods", "Skyrim", "PC"],
+		"tsw": ["https://www.curseforge.com/tsw/tsw-mods", "The Secret World", "PC"],
+		"teso": ["https://www.curseforge.com/teso/teso-addons", "The Elder Scrolls Online", "PC"],
+		"sv": ["https://www.curseforge.com/stardewvalley/mods", "Stardew Valley", "PC"],
+		"swl": ["https://www.curseforge.com/swlegends/tswl-mods", "Secret World Legends", "PC"],
+		"coa": ["https://www.curseforge.com/chronicles-of-arcadia/addons", "Chronicles of Arcadia", "PC"],
+		"dd": ["https://www.curseforge.com/darkestdungeon/dd-mods", "Darkest Dungeon", "PC"],
+		"sm": ["https://www.curseforge.com/surviving-mars/mods", "Surviving Mars", "PC"],
+		"gta5": ["https://www.curseforge.com/gta5/gta-v-mods", "Grand Theft Auto V", "PC"],
+		"staxel": ["https://www.curseforge.com/staxel/staxel-mods", "Staxel", "PC"]
+	};
+
+	if (urlMatcher[type]) {
+		urlBase = urlMatcher[type][0];
+		game    = urlMatcher[type][1];
+		system  = urlMatcher[type][2];
+	}
+
+	await mainBrowserPage.goto(urlBase, {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var lastPage = await mainBrowserPage.evaluate(() => {
+		var pageListContainer = document.getElementsByClassName("pagination-top");
+		if (pageListContainer.length === 0) {
+			return 1;
+		} else {
+			var pagesArray = [0].children;
+			return parseInt (pagesArray[pagesArray.length - 2].innerText);
+		}
+	});
+
+	for (let page = 1; page <= lastPage; page++) {
+		var pageLink = urlBase + "?page=" + page;
+		console.log(pageLink);
+		await mainBrowserPage.goto(pageLink, {
+			waitUntil: "domcontentloaded",
+			timeout: 0
+		});
+
+		var tempData = await mainBrowserPage.evaluate(() => {
+			var tempData = [];
+			var hackList = document.getElementsByClassName("my-4")[0].previousElementSibling.firstElementChild.children;
+			Array.from(hackList).forEach(function (hackContainer) {
+				var container = hackContainer.firstElementChild;
+
+				var downloadsString = container.children[1].children[1].children[0].innerText.replace(" Downloads", "");
+				var downloadNumber;
+				if (downloadsString.endsWith("K")) {
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
+				} else if (downloadsString.endsWith("M")) {
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
+				} else {
+					downloadNumber = parseInt (downloadsString);
+				}
+
+				var types = Array.from(container.children[2].children[1].children).map(function (typeImage) {
+					return typeImage.firstElementChild.firstElementChild.title;
+				});
+
+				tempData.push({
+					name: container.children[0].children[1].children[0].innerText,
+					author: container.children[0].children[1].children[2].innerText,
+					release: container.children[1].children[1].children[2].innerText.replace("Created ", ""),
+					downloads: downloadNumber,
+					type: types.join(", "),
+					url: container.children[0].children[1].children[0].href,
+					source: "curseforge"
+				});
+			});
+
+			return tempData;
+		});
+
+		tempData.forEach(function (hack) {
+			hack.release      = moment (hack.release, "MMMMDDYYYY");
+			hack.originalgame = game;
+			hack.system       = system;
+			console.log(hack);
+			allHackEntries.push(hack);
+		});
+	}
+}
+
+function dumpCurrentData () {
+	allHackEntries.forEach((input) => {
+		var data = [
+			input.name ? input.name : "",
+			input.author ? input.author : "",
+			input.release ? input.release.format("MMMM Do YYYY") : "",
+			input.originalgame ? input.originalgame : "",
+			input.system ? input.system : "",
+			typeof input.downloads !== "undefined" ? input.downloads : "",
+			input.type ? '"' + input.type + '"' : "",
+			input.important ? "TRUE" : "FALSE",
+			input.url ? input.url : "",
+		];
+
+		csvWriter.write(data.join(",") + "\n");
+	});
+	allHackEntries.length = 0;
+}
+
 (async () => {
-	browser         = await puppeteer.launch();
+	var name = "database.csv";
+
+	browser         = await puppeteer.launch({ headless: true });
 	mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
 
-	var numOfBrowserThreads = 6;
-	for (let i = 0; i < numOfBrowserThreads; i++) {
-		cachePages.push(await (await browser.createIncognitoBrowserContext()).newPage());
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
 	}
 
 	console.log("Browser opened");
 
+	csvWriter = fs.createWriteStream(name, {
+		flags: "w"
+	});
+
+	csvWriter.write("Name,Author,Release,Original Game,System,Downloads,Type,Important,Url\n");
+
 	// https://pokemonromhack.com/list
 	await pokemonArchive1 ();
+	dumpCurrentData ();
 
 	// https://www.romhacking.net/?page=hacks
 	await generalArchive1 ();
+	dumpCurrentData ();
 
 	// https://www.smwcentral.net/?p=section&s=smwhacks
 	await smwArchive1 ();
+	dumpCurrentData ();
 
 	// https://www.smwcentral.net/?p=section&s=sm64hacks
 	await sm64Archive1 ();
+	dumpCurrentData ();
 
 	// https://www.smwcentral.net/?p=section&s=yihacks
 	await yoshisIslandArchive1 ();
+	dumpCurrentData ();
 
 	// https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks
 	await sm64Archive2 ();
+	dumpCurrentData ();
 
 	// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
 	await sm64DSArchive1 ();
+	dumpCurrentData ();
 
 	// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
 	await pokemonArchive2 ();
+	dumpCurrentData ();
 
 	// https://www.smspower.org/Hacks/GameModifications
 	await smspowerArchive1 ();
+	dumpCurrentData ();
 
 	// https://atariage.com/software_hacks.php?SystemID=2600
 	await atari2600Archive ();
+	dumpCurrentData ();
 
 	// https://gamebanana.com/projects?mid=SubmissionsList
 	await gamebananaProjectsArchive ();
+	dumpCurrentData ();
 
 	// https://www.moddb.com/mods
-	await moddbArchive ();
+	await moddbModsArchive ();
+	dumpCurrentData ();
+
+	// https://www.moddb.com/addons
+	await moddbAddonsArchive ();
+	dumpCurrentData ();
 
 	// http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack
 	await brawlVaultArchive ();
+	dumpCurrentData ();
 
 	// https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/
 	await quakeWikiArchive ();
+	dumpCurrentData ();
 
 	// https://www.nexusmods.com/mods/
 	await nexusModsArchive ();
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/minecraft/mc-mods
+	await curseforgeArchive ("mc-mod");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/minecraft/bukkit-plugins
+	await curseforgeArchive ("mc-plugin");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/wow/addons
+	await curseforgeArchive ("wow");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/sc2/assets
+	await curseforgeArchive ("sc2");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/kerbal/ksp-mods
+	await curseforgeArchive ("ksp");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/wildstar/ws-addons
+	await curseforgeArchive ("ws");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/terraria/maps
+	await curseforgeArchive ("terraria");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/worldoftanks/wot-mods
+	await curseforgeArchive ("wot");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/rom/addons
+	await curseforgeArchive ("rom");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/rift/addons
+	await curseforgeArchive ("rift");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/skyrim/mods
+	await curseforgeArchive ("skyrim");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/tsw/tsw-mods
+	await curseforgeArchive ("tsw");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/teso/teso-addons
+	await curseforgeArchive ("teso");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/stardewvalley/mods
+	await curseforgeArchive ("sv");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/swlegends/tswl-mods
+	await curseforgeArchive ("swl");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/chronicles-of-arcadia/addons
+	await curseforgeArchive ("coa");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/darkestdungeon/dd-mods
+	await curseforgeArchive ("dd");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/surviving-mars/mods
+	await curseforgeArchive ("sm");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/gta5/gta-v-mods
+	await curseforgeArchive ("gta5");
+	dumpCurrentData ();
+
+	// https://www.curseforge.com/staxel/staxel-mods
+	await curseforgeArchive ("staxel");
+	dumpCurrentData ();
+
+	await browser.close();
 
 	var additionalHacks = require ("./additional.js");
 	additionalHacks.forEach(function (hack) {
@@ -1023,43 +1363,14 @@ async function nexusModsArchive () {
 		hack.release = moment (hack.release, ["DDMMYYYY", "MMMMDDYYYY", "YYYY"]);
 	});
 	console.log("Additional Hacks Length: " + additionalHacks.length);
-	console.log(additionalHacks);
-	allHackEntries = allHackEntries.concat(additionalHacks);
 
-	var name = "database.xlsx";
+	additionalHacks.forEach(hack => console.log(hack));
 
-	if (fs.existsSync(name))
-		fs.unlinkSync(name);
+	allHackEntries = additionalHacks;
 
-	allHackEntries = allHackEntries.map(obj => [obj.name,
-											obj.author,
-											obj.release ? obj.release.format("dddd, MMMM Do YYYY") : null,
-											obj.originalgame,
-											obj.system,
-											obj.downloads,
-											obj.type,
-											obj.important,
-											obj.url]);
+	dumpCurrentData ();
 
-	allHackEntries.unshift([
-		"Name",
-		"Author",
-		"Release",
-		"Original Game",
-		"System",
-		"Downloads",
-		"Type",
-		"Important",
-		"Url"
-	]);
+	csvWriter.end();
 
-	console.log(allHackEntries);
-
-	fs.writeFileSync(name, XLSX.build(
-							   [{
-								   name: "allhacks",
-								   data: allHackEntries
-							   }]));
-
-	await browser.close();
+	await (new Promise (res => csvWriter.on("finish", res)));
 }) ();

@@ -42,10 +42,18 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 
 					var hackEntry;
 
-					if (type === "html") {
-						hackEntry = await pageCallback (page, linkHere);
-					} else if (type === "json") {
-						hackEntry = await pageCallback (json.data, linkHere);
+					try {
+						if (type === "html") {
+							hackEntry = await pageCallback (page, linkHere);
+						} else if (type === "json") {
+							hackEntry = await pageCallback (json.data, linkHere);
+						}
+					} catch (e) {
+						// Last ditch
+						// Some errors are just impossible to fix :)
+						console.error(e.toString());
+						console.trace();
+						return;
 					}
 
 					if (hackEntry) {
@@ -1185,6 +1193,7 @@ function dumpCurrentData () {
 			input.type ? '"' + input.type + '"' : "",
 			input.important ? "TRUE" : "FALSE",
 			input.url ? input.url : "",
+			input.source ? input.source : "",
 		];
 
 		csvWriter.write(data.join(",") + "\n");

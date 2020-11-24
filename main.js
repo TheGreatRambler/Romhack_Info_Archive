@@ -710,7 +710,9 @@ async function gamebananaProjectsArchive () {
 				author: jsondata.author.name,
 				release: jsondata.datePublished.split("T")[0],
 				originalgame: jsondata.isPartOf.name,
-				system: jsondata.isPartOf.gamePlatform,
+				// Always reports PC, it's so unreliable remove it entirely
+				//system: jsondata.isPartOf.gamePlatform,
+				system: null,
 				// View count is an option?? Maybe use it???
 				downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
 				type: (await axios.get("https://gamebanana.com/projects/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
@@ -804,6 +806,161 @@ async function moddbArchive () {
 	}, "html", "YYYYMMDD");
 }
 
+async function brawlVaultArchive () {
+	await mainBrowserPage.goto("http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var lastPage = await mainBrowserPage.evaluate(() => {
+		var pagesArray = document.getElementsByClassName("hackPages")[0].children[0].children;
+		return parseInt (document.getElementsByClassName("hackPages")[0].children[0].children[pagesArray.length - 1].dataset.page);
+	});
+
+	for (let page = 1; page <= lastPage; page++) {
+		var pageLink = "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack&action=changePage&Page=" + page + "&timeFrame=-1";
+		console.log(pageLink);
+		await mainBrowserPage.goto(pageLink, {
+			waitUntil: "domcontentloaded",
+			timeout: 0
+		});
+
+		var tempData = await mainBrowserPage.evaluate(() => {
+			var tempData = [];
+			var hackList = document.getElementById("hackHolder").children;
+			Array.from(hackList).forEach(function (hackContainer) {
+				var authors     = [];
+				var authorIndex = 2;
+				var readAuthors = true;
+				while (readAuthors) {
+					if (hackContainer.children[authorIndex].tagName === "BR") {
+						readAuthors = false;
+					} else {
+						authors.push(hackContainer.children[authorIndex].innerText);
+						authorIndex++;
+					}
+				}
+
+				tempData.push({
+					name: hackContainer.children[1].innerText,
+					author: authors.join(", "),
+					release: hackContainer.children[0].children[2].nextSibling.textContent.trimLeft(),
+					originalgame: "Super Smash Bros Brawl",
+					system: "Wii",
+					downloads: parseInt (hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
+					type: hackContainer.children[authors.length + 4].innerText.slice(1, -1),
+					// None have dedicated pages, redirect to master page
+					url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack"
+				});
+			});
+
+			return tempData;
+		});
+
+		tempData.forEach(function (hack) {
+			hack.release = moment (hack.release, "MMMMDDYYYY");
+			console.log(hack);
+			allHackEntries.push(hack);
+		});
+	}
+}
+
+async function quakeWikiArchive () {
+	await mainBrowserPage.goto("https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var links = await mainBrowserPage.evaluate(() => {
+		var allLinks = Array.from(document.getElementsByClassName("w3p-subpages")[0].children).map(project => project.firstChild.href);
+		return allLinks;
+	});
+
+	console.log("Quake Wiki Length: " + links.length);
+	console.log(links);
+
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
+		var temp = await page.evaluate(() => {
+			var downloadText          = document.getElementsByClassName("download-link")[0].innerText;
+			var startDownloadTextSnip = document.getElementsByClassName("download-link")[0].innerText.indexOf("(") + 1;
+
+			return {
+				name: document.getElementsByClassName("post-title")[0].innerText,
+				author: document.getElementsByClassName("post-info")[0].innerText.replace("Posted by ", "").split(" ")[0],
+				release: document.getElementsByClassName("block-content")[0].children[0].children[2].innerText.replace("Released: ", ""),
+				originalgame: "Quake 1",
+				system: "PC",
+				type: null,
+				important: false,
+				downloads: parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", ""))
+			};
+		});
+		temp.url = link;
+		return temp;
+	}, "html", "YYYYMMDD");
+}
+
+async function nexusModsArchive () {
+	var link = "https://www.nexusmods.com/mods/";
+	console.log(link);
+	await mainBrowserPage.goto(link, {
+		waitUntil: "networkidle2",
+		timeout: 0
+	});
+
+	while (true) {
+		var tempData = await mainBrowserPage.evaluate(() => {
+			var tempData = [];
+			var hackList = document.getElementsByClassName("tiles")[0].children;
+			Array.from(hackList).forEach(function (hackContainer) {
+				var container = hackContainer.children[1];
+
+				var downloadsString = container.children[3].firstElementChild.children[2].innerText;
+				var downloadNumber;
+				if (downloadsString === "--") {
+					downloadNumber = 0;
+				} else if (downloadsString.endsWith("k")) {
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
+				} else if (downloadsString.endsWith("M")) {
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
+				} else {
+					downloadNumber = parseInt (downloadsString);
+				}
+
+				tempData.push({
+					name: container.children[2].children[1].children[0].innerText,
+					author: container.children[2].children[1].children[1].children[3].innerText.replace("Author: ", ""),
+					release: container.children[2].children[1].children[1].children[1].dateTime,
+					originalgame: container.children[2].children[1].children[1].children[0].children[0].innerText,
+					system: "PC",
+					downloads: downloadNumber,
+					type: container.children[2].children[1].children[1].children[0].children[1].innerText,
+					url: container.children[2].children[1].children[0].firstChild.href
+				});
+			});
+
+			return tempData;
+		});
+
+		tempData.forEach(function (hack) {
+			hack.release = moment (hack.release, "YYYYMMDD HHSS");
+			console.log(hack);
+			allHackEntries.push(hack);
+		});
+
+		if (await mainBrowserPage.evaluate(() => {
+				return document.getElementsByClassName("next").length === 0;
+			})) {
+			break;
+		} else {
+			await mainBrowserPage.click(".next");
+			await mainBrowserPage.waitFor(100);
+			await mainBrowserPage.waitForSelector("loading-wheel", { hidden: true });
+			await mainBrowserPage.waitFor(100);
+		}
+	}
+}
+
 (async () => {
 	browser         = await puppeteer.launch();
 	mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
@@ -851,10 +1008,19 @@ async function moddbArchive () {
 	// https://www.moddb.com/mods
 	await moddbArchive ();
 
+	// http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack
+	await brawlVaultArchive ();
+
+	// https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/
+	await quakeWikiArchive ();
+
+	// https://www.nexusmods.com/mods/
+	await nexusModsArchive ();
+
 	var additionalHacks = require ("./additional.js");
 	additionalHacks.forEach(function (hack) {
 		// Correct date
-		hack.release = moment (hack.release, ["DDMMYYYY", "MMDDYYYY", "YYYY"]);
+		hack.release = moment (hack.release, ["DDMMYYYY", "MMMMDDYYYY", "YYYY"]);
 	});
 	console.log("Additional Hacks Length: " + additionalHacks.length);
 	console.log(additionalHacks);

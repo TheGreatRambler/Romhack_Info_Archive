@@ -1066,15 +1066,25 @@ async function nexusModsArchive () {
 			allHackEntries.push(hack);
 		});
 
-		if (await mainBrowserPage.evaluate(() => {
-				return document.getElementsByClassName("next").length === 0;
-			})) {
-			break;
-		} else {
-			await mainBrowserPage.click(".next");
+		var nextPage = await mainBrowserPage.evaluate(() => {
+			var nextPage = document.getElementsByClassName("page-selected mfp-prevent-close")[0].parentElement.nextElementSibling;
+			if (nextPage) {
+				return nextPage.innerText;
+			} else {
+				return 0;
+			}
+		});
+
+		if (nextPage) {
+			await mainBrowserPage.evaluate((page) => {
+				window.RH_ModList.Send('page', page.toString());
+			}, page);
+
 			await mainBrowserPage.waitFor(100);
 			await mainBrowserPage.waitForSelector("loading-wheel", { hidden: true });
 			await mainBrowserPage.waitFor(100);
+		} else {
+			return;
 		}
 	}
 }

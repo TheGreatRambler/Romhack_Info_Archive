@@ -648,7 +648,7 @@ async function smspowerArchive1 () {
 					source: "smspower.org"
 			}
 		});
-	}, "html", "YYYY");
+	}, "html", ["YYYY", "DDMMMMYYYY"]);
 };
 
 async function atari2600Archive () {

@@ -66,6 +66,8 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 						// Sometimes the release isn't defined
 						if (hackEntry.release) {
 							hackEntry.release = moment (hackEntry.release, dateFormat);
+							if (!hackEntry.release.isValid())
+								hackEntry.release = null;
 						}
 
 						console.log(hackEntry);
@@ -131,7 +133,7 @@ async function generalArchive1 () {
 	});
 
 	var links = [];
-	var start = 15;
+	var start = 1;
 
 	while (true) {
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -146,7 +148,7 @@ async function generalArchive1 () {
 			return document.getElementsByTagName("caption")[0].innerText.split(" ");
 		});
 		parts[2]  = parts[2].slice(0, -1);
-		if (parts[2] === parts[4] || start === 17) {
+		if (parts[2] === parts[4]) {
 			// This is the last page
 			break;
 		} else {
@@ -785,7 +787,7 @@ async function moddbModsArchive () {
 			return parts[3] === parts[5].replace(",", "").replace(")", "");
 		});
 
-		if (shouldBreak || start === 10) {
+		if (shouldBreak) {
 			// This is the last page
 			break;
 		} else {
@@ -867,7 +869,7 @@ async function moddbAddonsArchive () {
 			return parts[3] === parts[5].replace(",", "").replace(")", "");
 		});
 
-		if (shouldBreak || start === 10) {
+		if (shouldBreak) {
 			// This is the last page
 			break;
 		} else {
@@ -1197,17 +1199,316 @@ async function curseforgeArchive (type) {
 	}
 }
 
+async function wolfenVaultArchive () {
+	await mainBrowserPage.goto("http://www.wolfenvault.com/mods.html", {
+		waitUntil: "networkidle2",
+		timeout: 0
+	});
+
+	var links = await mainBrowserPage.evaluate(() => {
+		var allLinks = [];
+
+		function addToTotalLinks (item) {
+			allLinks = allLinks.concat(Array.from(item.children).map(item => item.firstElementChild.href));
+			item     = item.nextElementSibling;
+			allLinks = allLinks.concat(Array.from(item.children).map(item => item.firstElementChild.href));
+			item     = item.nextElementSibling;
+			allLinks = allLinks.concat(Array.from(item.children).map(item => item.firstElementChild.href));
+		}
+
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(2) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(4) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(6) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(8) > tbody:nth-child(1) > tr:nth-child(2)"));
+
+		return allLinks;
+	});
+
+	console.log("Wolfen Vault Sub-page Length: " + links.length);
+	console.log(links);
+
+	for (var i = 0; i < links.length; i++) {
+		link = links[i];
+
+		console.log(link);
+		await mainBrowserPage.goto(link, {
+			waitUntil: "domcontentloaded",
+			timeout: 0
+		});
+
+		var tempData = await mainBrowserPage.evaluate(() => {
+			var tempData = [];
+			var hackList = Array.from(document.querySelectorAll(".auto-style26, .auto-style25, .auto-style32")).filter(item => !!item.firstElementChild)[0].firstElementChild.children;
+			Array.from(hackList).forEach(function (hackContainer, index) {
+				if (index === 0) {
+					return
+				}
+
+				var offset = !hackContainer.children[0].innerText.trim() ? 1 : 0;
+
+				tempData.push({
+					name: hackContainer.children[0 + offset].innerText,
+					author: hackContainer.children[1 + offset].innerText,
+					release: hackContainer.children[2 + offset].innerText,
+					downloads: null,
+					type: hackContainer.children[3 + offset].innerText + ", " + hackContainer.children[4 + offset].innerText + " levels",
+					source: "wolfen vault"
+				});
+			});
+
+			return tempData;
+		});
+
+		var gameName;
+		if (link.includes("tcs")) {
+			gameName = "Wolfenstein 3D";
+		} else if (link.includes("reg")) {
+			gameName = "Wolfenstein 3D";
+		} else if (link.includes("sod")) {
+			gameName = "Spear of Destiny";
+		} else if (link.includes("shw")) {
+			gameName = "Shareware Wolfenstein 3D";
+		}
+
+		tempData.forEach(function (hack) {
+			hack.release      = moment (hack.release, "MMDDYY");
+			hack.originalgame = gameName;
+			hack.system       = "PC";
+			hack.url          = link;
+			if (link.includes("tcs"))
+				hack.type += ", Modified EXE";
+			console.log(hack);
+			allHackEntries.push(hack);
+		});
+	}
+}
+
+async function halfLifeWikiArchive () {
+	await mainBrowserPage.goto("https://half-life.fandom.com/wiki/Mods", {
+		waitUntil: "domcontentloaded",
+		timeout: 0
+	});
+
+	var links = await mainBrowserPage.evaluate(() => {
+		var allLinks = Array.from(document.getElementById("GoldSrc").parentElement.nextElementSibling.children).map(item => item.firstElementChild.firstElementChild ? item.firstElementChild.firstElementChild.href : null).filter(item => item && item.includes("half-life.fandom"));
+
+		return allLinks.concat(Array.from(document.getElementById("Source").parentElement.nextElementSibling.children).map(item => item.firstElementChild ? (item.firstElementChild.firstElementChild ? item.firstElementChild.firstElementChild.href : null) : null).filter(item => item && item.includes("half-life.fandom")));
+	});
+
+	console.log("Half Life Wiki Length: " + links.length);
+	console.log(links);
+
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
+		var temp = await page.evaluate(() => {
+			return {
+				name: document.querySelector("[data-source='name']").innerText,
+				author: document.querySelector("[data-source='developer']").children[1].innerText.replace("\n", ", "),
+				release: document.querySelector("[data-source='date']").children[1].innerText,
+				// Embarrasing
+				originalgame: null,
+				system: document.querySelector("[data-source='platform']").children[1].innerText.replace("wikipedia:", ""),
+				type: document.querySelector("[data-source='genre']").children[1].innerText + ", " + document.querySelector("[data-source='input']").children[1].innerText + ", " + document.querySelector("[data-source='mode']").children[1].innerText + ", " + document.querySelector("[data-source='engine']").children[1].innerText,
+				important: false,
+				downloads: null,
+				source: "half-life wiki"
+			};
+		});
+		temp.url = link;
+		return temp;
+	}, "html", "MMMMYYYY");
+}
+
+async function runthinkshootliveArchive (type) {
+	var urlBase;
+	var game;
+	var system;
+
+	// Every game supported by curseforge
+	var urlMatcher = {
+		"hl": ["https://www.runthinkshootlive.com/hl", "Half Life", "PC"],
+		"of": ["https://www.runthinkshootlive.com/of", "Opposing Force", "PC"],
+		"hl2": ["https://www.runthinkshootlive.com/hl2", "Half Life 2", "PC"],
+		"ep1": ["https://www.runthinkshootlive.com/ep1", "Half Life 2, Episode 1", "PC"],
+		"ep2": ["https://www.runthinkshootlive.com/ep2", "Half Life 2, Episode 2", "PC"],
+		"bm": ["https://www.runthinkshootlive.com/bm", "Black Mesa", "PC"]
+	};
+
+	if (urlMatcher[type]) {
+		urlBase = urlMatcher[type][0];
+		game    = urlMatcher[type][1];
+		system  = urlMatcher[type][2];
+	}
+
+	await mainBrowserPage.goto(urlBase, {
+		waitUntil: "networkidle2",
+		timeout: 0
+	});
+
+	await mainBrowserPage.waitFor(200);
+
+	var lastPage = await mainBrowserPage.evaluate(() => {
+		var pageListContainer = document.getElementsByClassName("dataTables_paginate paging_simple_numbers")[0].children[1].children;
+		return parseInt (pageListContainer[pageListContainer.length - 1].innerText);
+	});
+
+	for (let page = 1; page <= lastPage; page++) {
+		var tempData = await mainBrowserPage.evaluate(() => {
+			var tempData = [];
+			var hackList = document.getElementsByClassName("display dataTable")[0].children[2].children;
+			Array.from(hackList).forEach(function (hackContainer) {
+				var date = hackContainer.children[3].innerText;
+				if (date === "01 Jan 1998") {
+					// Impossible guess, the game wasn't released by then
+				} else if (date === "08 Nov 0215") {
+					// Somebody mistyped
+					date = "08 Nov 2015";
+				}
+
+				tempData.push({
+					name: hackContainer.children[0].innerText,
+					author: hackContainer.children[4].innerText,
+					release: date,
+					downloads: parseInt (hackContainer.children[5].innerText),
+					type: hackContainer.children[10].innerText + ", " + hackContainer.children[11].innerText + ", " + hackContainer.children[12].innerText,
+					url: hackContainer.children[0].firstElementChild.href,
+					source: "runthinkshootlive"
+				});
+			});
+
+			return tempData;
+		});
+
+		tempData.forEach(function (hack) {
+			hack.release      = moment (hack.release, "DDMMMMYYYY");
+			hack.originalgame = game;
+			hack.system       = system;
+			console.log(hack);
+			allHackEntries.push(hack);
+		});
+
+		if (page != lastPage) {
+			await mainBrowserPage.click(".next");
+		}
+	}
+}
+
+async function gta5Archive () {
+	await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded", {
+		waitUntil: "networkidle2",
+		timeout: 0
+	});
+
+	while (true) {
+		var tempData = await mainBrowserPage.evaluate(() => {
+			var tempData = [];
+			var hackList = document.getElementsByClassName("file-list")[0].firstElementChild.children;
+			Array.from(hackList).forEach(function (hackContainer) {
+				tempData.push({
+					name: hackContainer.firstElementChild.children[1].firstElementChild.innerText,
+					author: hackContainer.firstElementChild.children[1].children[1].children[1].innerText,
+					release: hackContainer.children[0].children[2].nextSibling.textContent.trimLeft(),
+					originalgame: "Super Smash Bros Brawl",
+					system: "Wii",
+					downloads: parseInt (hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
+					type: hackContainer.children[authors.length + 4].innerText.slice(1, -1),
+					// None have dedicated pages, redirect to master page
+					url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack",
+					source: "brawlvault"
+				});
+			});
+
+			return tempData;
+		});
+
+		tempData.forEach(function (hack) {
+			hack.release = moment (hack.release, "MMMMDDYYYY");
+			console.log(hack);
+			allHackEntries.push(hack);
+		});
+
+		var shouldContinue = await mainBrowserPage.evaluate(() => {
+			document.getElementsByClassName("next disabled").length === 0;
+		});
+
+		if (shouldContinue) {
+			break
+		} else {
+			var nextPage = await mainBrowserPage.evaluate(() => {
+				return document.getElementsByClassName("next")[0].firstElementChild.href;
+			});
+
+			await mainBrowserPage.goto(nextPage, {
+				waitUntil: "domcontentloaded",
+				timeout: 0
+			});
+		}
+	}
+}
+
+async function gta5Archive () {
+	await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded", {
+		waitUntil: "networkidle2",
+		timeout: 0
+	});
+
+	var links = [];
+	var start = 1;
+
+	while (true) {
+		var partialLinks = await mainBrowserPage.evaluate(() => {
+															  return Array.from(document.getElementsByClassName("file-list")[0].firstElementChild.children).map(item => item.firstElementChild.firstElementChild.href) });
+
+		links = links.concat(partialLinks);
+
+		var shouldBreak = await mainBrowserPage.evaluate(() => {
+			document.getElementsByClassName("next disabled").length !== 0;
+		});
+
+		if (shouldBreak) {
+			// This is the last page
+			break;
+		} else {
+			console.log("Handled page " + start);
+			start++;
+			await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded/" + start, {
+				waitUntil: "domcontentloaded"
+			});
+		}
+	}
+
+	console.log("GTAV Mods Archive Length: " + links.length);
+	console.log(links);
+
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
+		var part = await page.evaluate(() => {
+			return {
+				name: document.getElementsByClassName("clearfix")[1].innerText.trim(),
+					author: document.getElementsByClassName("username")[0].innerText,
+					release: document.getElementById("file-dates").children[1].innerText.replace("\nFirst Uploaded:\n", "").replace("\n", ""),
+					originalgame: "GTA V",
+					system: "PC",
+					type: document.getElementById("tag-list").innerText.trim().replace(/\s+/g, ", "),
+					important: false,
+					downloads: parseInt (document.getElementsByClassName("file-stat file-downloads pull-left")[0].firstElementChild.innerText.replace(/\,/g, "")),
+					source: "gtav mods"
+			}
+		});
+		part.url = link;
+		return part;
+	}, "html", "MMMMDDYYYY");
+}
+
 function dumpCurrentData () {
 	allHackEntries.forEach((input) => {
 		var data = [
 			input.name ? '"' + input.name.replace(/\"/g, "'") + '"' : "",
-			input.author ? '"' + input.author + '"' : "",
-			input.release ? input.release.format("MMMM Do YYYY") : "",
-			input.release ? input.release.valueOf() : "",
-			input.originalgame ? '"' + input.originalgame + '"' : "",
-			input.system ? '"' + input.system + '"' : "",
+			input.author ? '"' + input.author.replace(/\"/g, "'") + '"' : "",
+			input.release ? (input.release.isValid() ? input.release.format("MMMM Do YYYY") : "") : "",
+			input.release ? input.release.valueOf() || "" : "",
+			input.originalgame ? '"' + input.originalgame.replace(/\"/g, "'") + '"' : "",
+			input.system ? '"' + input.system.replace(/\"/g, "'") + '"' : "",
 			typeof input.downloads !== "undefined" ? input.downloads : "",
-			input.type ? '"' + input.type + '"' : "",
+			input.type ? '"' + input.type.replace(/\"/g, "'") + '"' : "",
 			input.important ? "TRUE" : "FALSE",
 			input.url ? '"' + input.url + '"' : "",
 			input.source ? input.source : "",
@@ -1379,6 +1680,42 @@ function dumpCurrentData () {
 
 	// https://www.curseforge.com/staxel/staxel-mods
 	await curseforgeArchive ("staxel");
+	dumpCurrentData ();
+
+	// http://www.wolfenvault.com/mods.html
+	await wolfenVaultArchive ();
+	dumpCurrentData ();
+
+	// https://half-life.fandom.com/wiki/Mods
+	await halfLifeWikiArchive ();
+	dumpCurrentData ();
+
+	// https://www.runthinkshootlive.com/hl
+	await runthinkshootliveArchive ("hl");
+	dumpCurrentData ();
+
+	// https://www.runthinkshootlive.com/of
+	await runthinkshootliveArchive ("of");
+	dumpCurrentData ();
+
+	// https://www.runthinkshootlive.com/hl2
+	await runthinkshootliveArchive ("hl2");
+	dumpCurrentData ();
+
+	// https://www.runthinkshootlive.com/ep1
+	await runthinkshootliveArchive ("ep1");
+	dumpCurrentData ();
+
+	// https://www.runthinkshootlive.com/ep2
+	await runthinkshootliveArchive ("ep2");
+	dumpCurrentData ();
+
+	// https://www.runthinkshootlive.com/bm
+	await runthinkshootliveArchive ("bm");
+	dumpCurrentData ();
+
+	// https://www.gta5-mods.com/all/most-downloaded
+	await gta5Archive ();
 	dumpCurrentData ();
 
 	await browser.close();

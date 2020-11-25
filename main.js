@@ -536,16 +536,22 @@ async function pokemonArchive2 () {
 			return document.getElementsByClassName("pblock").length != 0;
 		});
 
+		var gameMapping = {
+			": Fire Red": "Pokemon Fire Red",
+			": FireRed": "Pokemon Fire Red",
+			": Red": "Pokemon Fire Red",
+			": Crystal": "Pokemon Crystal",
+			": Gold": "Pokemon Gold",
+			": Emerald(?)": "Pokemon Emerald",
+			": Gold": "Pokemon Gold",
+			": Ruby": "Pokemon Ruby",
+			": Red": "Pokemon Red",
+			": Emerald": "Pokemon Emerald"
+		};
+
 		if (isNormalLayout) {
 			// New layout
-			hackEntry = await page.evaluate(() => {
-				var gameMapping = {
-					": Fire Red": "Pokemon Fire Red",
-					": FireRed": "Pokemon Fire Red",
-					": Red": "Pokemon Fire Red",
-					": Crystal": "Pokemon Crystal"
-				};
-
+			hackEntry = await page.evaluate((gameMapping) => {
 				if (document.querySelector("[itemprop='name']")) {
 					return {
 						name: document.querySelector("[itemprop='name']").innerText,
@@ -574,18 +580,10 @@ async function pokemonArchive2 () {
 							important: false
 					}
 				}
-			});
+			}, gameMapping);
 		} else {
 			// Old layout
-			hackEntry = await page.evaluate(() => {
-				var gameMapping = {
-					": Fire Red": "Pokemon Fire Red",
-					": FireRed": "Pokemon Fire Red",
-					": Red": "Pokemon Fire Red",
-					": Crystal": "Pokemon Crystal",
-					": Gold": "Pokemon Gold"
-				};
-
+			hackEntry = await page.evaluate((gameMapping) => {
 				var start = document.getElementsByTagName("h4")[3];
 
 				function advanceForwards (element, numberOfElements) {
@@ -608,7 +606,7 @@ async function pokemonArchive2 () {
 						important: false,
 						source: "gbahacks.com"
 				}
-			});
+			}, gameMapping);
 		}
 
 		return hackEntry;

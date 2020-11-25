@@ -653,7 +653,7 @@ async function smspowerArchive1 () {
 
 async function atari2600Archive () {
 	await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
-		waitUntil: "domcontentloaded",
+		waitUntil: "networkidle2",
 		timeout: 0
 	});
 
@@ -764,7 +764,7 @@ async function gamebananaProjectsArchive () {
 
 async function moddbModsArchive () {
 	await mainBrowserPage.goto("https://www.moddb.com/mods", {
-		waitUntil: "domcontentloaded",
+		waitUntil: "networkidle2",
 		timeout: 0
 	});
 
@@ -846,7 +846,7 @@ async function moddbModsArchive () {
 
 async function moddbAddonsArchive () {
 	await mainBrowserPage.goto("https://www.moddb.com/addons", {
-		waitUntil: "domcontentloaded",
+		waitUntil: "networkidle2",
 		timeout: 0
 	});
 
@@ -924,7 +924,7 @@ async function moddbAddonsArchive () {
 
 async function brawlVaultArchive () {
 	await mainBrowserPage.goto("http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack", {
-		waitUntil: "domcontentloaded",
+		waitUntil: "networkidle2",
 		timeout: 0
 	});
 

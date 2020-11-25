@@ -1534,7 +1534,7 @@ function dumpCurrentData () {
 	});
 
 	csvWriter.write("Name,Author,Release,Release (UNIX Timestamp),Original Game,System,Downloads,Type,Important,Url,Source\n");
-	/*
+
 	// https://pokemonromhack.com/list
 	await pokemonArchive1 ();
 	dumpCurrentData ();
@@ -1594,12 +1594,11 @@ function dumpCurrentData () {
 	// https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/
 	await quakeWikiArchive ();
 	dumpCurrentData ();
-	*/
 
 	// https://www.nexusmods.com/mods/
 	await nexusModsArchive ();
 	dumpCurrentData ();
-	/*
+
 	// https://www.curseforge.com/minecraft/mc-mods
 	await curseforgeArchive ("mc-mod");
 	dumpCurrentData ();
@@ -1715,7 +1714,6 @@ function dumpCurrentData () {
 	// https://www.gta5-mods.com/all/most-downloaded
 	await gta5Archive ();
 	dumpCurrentData ();
-	*/
 
 	await browser.close();
 

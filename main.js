@@ -1235,14 +1235,13 @@ function dumpCurrentData () {
 	csvWriter.write("Name,Author,Release,Release (UNIX Timestamp),Original Game,System,Downloads,Type,Important,Url,Source\n");
 
 	// https://pokemonromhack.com/list
-	/*
 	await pokemonArchive1 ();
 	dumpCurrentData ();
-*/
+
 	// https://www.romhacking.net/?page=hacks
 	await generalArchive1 ();
 	dumpCurrentData ();
-	/*
+
 	// https://www.smwcentral.net/?p=section&s=smwhacks
 	await smwArchive1 ();
 	dumpCurrentData ();
@@ -1378,7 +1377,7 @@ function dumpCurrentData () {
 	// https://www.curseforge.com/staxel/staxel-mods
 	await curseforgeArchive ("staxel");
 	dumpCurrentData ();
-*/
+
 	await browser.close();
 
 	var additionalHacks = require ("./additional.js");

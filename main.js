@@ -1228,7 +1228,7 @@ function dumpCurrentData () {
 		flags: "w"
 	});
 
-	csvWriter.write("Name,Author,Release,Original Game,System,Downloads,Type,Important,Url\n");
+	csvWriter.write("Name,Author,Release,Original Game,System,Downloads,Type,Important,Url,Source\n");
 
 	// https://pokemonromhack.com/list
 	await pokemonArchive1 ();

@@ -51,6 +51,7 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 					} catch (e) {
 						// Last ditch
 						// Some errors are just impossible to fix :)
+						console.log(linkHere);
 						console.error(e.toString());
 						console.trace();
 						return;
@@ -130,7 +131,7 @@ async function generalArchive1 () {
 	});
 
 	var links = [];
-	var start = 1;
+	var start = 15;
 
 	while (true) {
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -145,7 +146,7 @@ async function generalArchive1 () {
 			return document.getElementsByTagName("caption")[0].innerText.split(" ");
 		});
 		parts[2]  = parts[2].slice(0, -1);
-		if (parts[2] === parts[4]) {
+		if (parts[2] === parts[4] || start === 17) {
 			// This is the last page
 			break;
 		} else {
@@ -162,6 +163,8 @@ async function generalArchive1 () {
 
 	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
+			// There's occassionally an error, I don't know why
+			// Perhaps rate limiting
 			var temp = {
 				name: document.getElementById("main").firstElementChild.firstElementChild.firstElementChild.innerText,
 				author: document.getElementsByTagName("td")[1].firstElementChild.innerText,
@@ -559,12 +562,12 @@ async function pokemonArchive2 () {
 					};
 				} else {
 					return {
-						name: document.getElementsByTagName("span")[1].innerText,
-							author: document.getElementsByTagName("span")[4].innerText,
+						name: document.getElementsByClassName("post-title entry-title")[0].innerText,
+							author: document.getElementsByClassName("pblock")[0].children[14].innerText,
 							// Not the release date sadly, only the update time
 							release: document.getElementsByTagName("h4")[1].innerText.replace("Updated: ", ""),
-							originalgame: gameMapping[document.getElementsByTagName("b")[2].nextSibling.textContent],
-							system: document.getElementsByTagName("span")[2].innerText,
+							originalgame: gameMapping[document.getElementsByClassName("pblock")[0].children[8].nextSibling],
+							system: document.getElementsByClassName("pblock")[0].children[6].innerText,
 							downloads: null,
 							type: null,
 							// We can't know
@@ -1232,13 +1235,14 @@ function dumpCurrentData () {
 	csvWriter.write("Name,Author,Release,Release (UNIX Timestamp),Original Game,System,Downloads,Type,Important,Url,Source\n");
 
 	// https://pokemonromhack.com/list
+	/*
 	await pokemonArchive1 ();
 	dumpCurrentData ();
-
+*/
 	// https://www.romhacking.net/?page=hacks
 	await generalArchive1 ();
 	dumpCurrentData ();
-
+	/*
 	// https://www.smwcentral.net/?p=section&s=smwhacks
 	await smwArchive1 ();
 	dumpCurrentData ();
@@ -1374,7 +1378,7 @@ function dumpCurrentData () {
 	// https://www.curseforge.com/staxel/staxel-mods
 	await curseforgeArchive ("staxel");
 	dumpCurrentData ();
-
+*/
 	await browser.close();
 
 	var additionalHacks = require ("./additional.js");

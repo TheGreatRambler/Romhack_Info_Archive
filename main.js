@@ -984,7 +984,7 @@ async function brawlVaultArchive () {
 
 async function quakeWikiArchive () {
 	await mainBrowserPage.goto("https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/", {
-		waitUntil: "domcontentloaded",
+		waitUntil: "networkidle2",
 		timeout: 0
 	});
 

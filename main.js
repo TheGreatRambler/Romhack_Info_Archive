@@ -1197,6 +1197,7 @@ function dumpCurrentData () {
 			input.name ? '"' + input.name + '"' : "",
 			input.author ? '"' + input.author + '"' : "",
 			input.release ? input.release.format("MMMM Do YYYY") : "",
+			input.release ? input.release.valueOf() : "",
 			input.originalgame ? '"' + input.originalgame + '"' : "",
 			input.system ? '"' + input.system + '"' : "",
 			typeof input.downloads !== "undefined" ? input.downloads : "",
@@ -1228,7 +1229,7 @@ function dumpCurrentData () {
 		flags: "w"
 	});
 
-	csvWriter.write("Name,Author,Release,Original Game,System,Downloads,Type,Important,Url,Source\n");
+	csvWriter.write("Name,Author,Release,Release (UNIX Timestamp),Original Game,System,Downloads,Type,Important,Url,Source\n");
 
 	// https://pokemonromhack.com/list
 	await pokemonArchive1 ();

@@ -1200,7 +1200,7 @@ async function curseforgeArchive (type) {
 function dumpCurrentData () {
 	allHackEntries.forEach((input) => {
 		var data = [
-			input.name ? '"' + input.name + '"' : "",
+			input.name ? '"' + input.name.replace(/\"/g, "'") + '"' : "",
 			input.author ? '"' + input.author + '"' : "",
 			input.release ? input.release.format("MMMM Do YYYY") : "",
 			input.release ? input.release.valueOf() : "",

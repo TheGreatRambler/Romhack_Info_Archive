@@ -1194,15 +1194,15 @@ async function curseforgeArchive (type) {
 function dumpCurrentData () {
 	allHackEntries.forEach((input) => {
 		var data = [
-			input.name ? input.name : "",
-			input.author ? input.author : "",
+			input.name ? '"' + input.name + '"' : "",
+			input.author ? '"' + input.author + '"' : "",
 			input.release ? input.release.format("MMMM Do YYYY") : "",
-			input.originalgame ? input.originalgame : "",
-			input.system ? input.system : "",
+			input.originalgame ? '"' + input.originalgame + '"' : "",
+			input.system ? '"' + input.system + '"' : "",
 			typeof input.downloads !== "undefined" ? input.downloads : "",
 			input.type ? '"' + input.type + '"' : "",
 			input.important ? "TRUE" : "FALSE",
-			input.url ? input.url : "",
+			input.url ? '"' + input.url + '"' : "",
 			input.source ? input.source : "",
 		];
 

@@ -1000,8 +1000,13 @@ async function quakeWikiArchive () {
 
 	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var temp = await page.evaluate(() => {
-			var downloadText          = document.getElementsByClassName("download-link")[0].innerText;
-			var startDownloadTextSnip = document.getElementsByClassName("download-link")[0].innerText.indexOf("(") + 1;
+			var downloadLinks = document.getElementsByClassName("download-link");
+			var downloads     = null;
+			if (downloadLinks.length !== 0) {
+				var downloadText          = [0].innerText;
+				var startDownloadTextSnip = document.getElementsByClassName("download-link")[0].innerText.indexOf("(") + 1;
+				downloads                 = parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", ""));
+			}
 
 			return {
 				name: document.getElementsByClassName("post-title")[0].innerText,
@@ -1011,7 +1016,7 @@ async function quakeWikiArchive () {
 				system: "PC",
 				type: null,
 				important: false,
-				downloads: parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", "")),
+				downloads: downloads,
 				source: "archived quakewiki.net"
 			};
 		});
@@ -1081,7 +1086,7 @@ async function nexusModsArchive () {
 		if (nextPage) {
 			await mainBrowserPage.evaluate((page) => {
 				window.RH_ModList.Send('page', page.toString());
-			}, page);
+			}, nextPage);
 
 			await mainBrowserPage.waitFor(100);
 			await mainBrowserPage.waitForSelector("loading-wheel", { hidden: true });

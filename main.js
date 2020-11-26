@@ -12,14 +12,14 @@ var allHackEntries = [];
 var csvWriter;
 
 var browser;
-var mainBrowserPage;
-var cachePages = [];
 
 var cacheSize      = 8;
 var cacheFlushSize = cacheSize * 1000;
 
-async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
+async function handleWebpageTemplate (links, pageCallback, type, dateFormat, requestsPerHour) {
 	var i = 0;
+	var requestsThisHour = 0;
+	var thisHour = new Date().getHours();
 	do {
 		cachePagePromises = [];
 
@@ -85,10 +85,31 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 		}
 
 		i += cacheSize;
+		requestsThisHour += cacheSize;
+
+		if (thisHour != new Date().getHours()) {
+			requestsThisHour = 0;
+			thisHour =  new Date().getHours();
+		}
+
+		/*
+		if (requestsThisHour > requestsPerHour) {
+			await new Promise(resolve => setTimeout(resolve, ms));
+		}
+		*/
+
 	} while (i < links.length);
 }
 
 async function pokemonArchive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://pokemonromhack.com/list", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -124,6 +145,14 @@ async function pokemonArchive1 () {
 };
 
 async function generalArchive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -187,6 +216,14 @@ async function generalArchive1 () {
 }
 
 async function smwArchive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -254,6 +291,14 @@ async function smwArchive1 () {
 }
 
 async function sm64Archive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -320,6 +365,14 @@ async function sm64Archive1 () {
 }
 
 async function yoshisIslandArchive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -387,6 +440,14 @@ async function yoshisIslandArchive1 () {
 }
 
 async function sm64Archive2 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -458,6 +519,14 @@ async function sm64Archive2 () {
 };
 
 async function sm64DSArchive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -513,6 +582,14 @@ async function sm64DSArchive1 () {
 };
 
 async function pokemonArchive2 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -613,6 +690,14 @@ async function pokemonArchive2 () {
 };
 
 async function smspowerArchive1 () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.smspower.org/Hacks/GameModifications", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -651,6 +736,14 @@ async function smspowerArchive1 () {
 };
 
 async function atari2600Archive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -710,58 +803,78 @@ async function atari2600Archive () {
 }
 
 async function gamebananaProjectsArchive () {
-	// TODO use https://gamebanana.com/projects/35468?api=StructuredDataModule
-	// https://github.com/axios/axios
-	// https://www.twilio.com/blog/5-ways-to-make-http-requests-in-node-js-using-async-await
-	var projectList = (await axios.get("https://gamebanana.com/projects?vl[page]=1&mid=SubmissionsList&/projects=&api=SubmissionsListModule")).data;
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
 
-	var links = [];
-	var start = 1;
-
-	while (true) {
-		var partialLinks = projectList._aCellValues.filter(project => project._aGame._sName !== "GameBanana").map(project => "https://gamebanana.com/projects/" + project._idItemRow + "?api=StructuredDataModule");
-
-		links = links.concat(partialLinks);
-
-		if (projectList._aCellValues.length === 0) {
-			// This is the last page
-			break;
-		} else {
-			console.log("Handled page " + start);
-			start++;
-			var projectList = (await axios.get("https://gamebanana.com/projects?vl[page]=" + start + "&mid=SubmissionsList&/projects=&api=SubmissionsListModule")).data;
-		}
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
 	}
 
-	console.log("Gamebanana Projects Length: " + links.length);
-	console.log(links);
+	// The different categories (consider adding more)
+	var categories = ["projects", "maps", "skins"];
 
-	await handleWebpageTemplate (links, async function returnHackEntry (jsondata, link) {
-		if (typeof jsondata !== "string") {
-			var id        = link.split("?")[0].replace("https://gamebanana.com/projects/", "");
-			var statsData = (await axios.get("https://gamebanana.com/projects/" + id + "?api=StatsModule")).data;
-			return {
-				name: jsondata.name,
-				author: jsondata.author.name,
-				release: jsondata.datePublished.split("T")[0],
-				originalgame: jsondata.isPartOf.name,
-				// Always reports PC, it's so unreliable remove it entirely
-				//system: jsondata.isPartOf.gamePlatform,
-				system: null,
-				// View count is an option?? Maybe use it???
-				downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
-				type: (await axios.get("https://gamebanana.com/projects/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
-				url: "https://gamebanana.com/projects/" + id,
-				source: "gamebanana projects"
-			};
-		} else {
-			// Some projects are listed as private for some reason
-			return undefined;
+	categories.forEach(function (category) {
+		var projectList = (await axios.get("https://gamebanana.com/" + category + "?vl[page]=1&mid=SubmissionsList&/" + category + "=&api=SubmissionsListModule")).data;
+
+		var links = [];
+		var start = 1;
+
+		while (true) {
+			var partialLinks = projectList._aCellValues.filter(project => !(project._aGame._sName === "GameBanana" || project._aGame._sName === "Steam" || project._aGame._sName === "Unity 3D" || project._aGame._sName === "Unreal Engine 4")).map(project => "https://gamebanana.com/" + category + "/" + project._idItemRow + "?api=StructuredDataModule");
+
+			links = links.concat(partialLinks);
+
+			if (projectList._aCellValues.length === 0) {
+				// This is the last page
+				break;
+			} else {
+				console.log("Handled page " + start);
+				start++;
+				var projectList = (await axios.get("https://gamebanana.com/" + category + "?vl[page]=" + start + "&mid=SubmissionsList&/" + category + "=&api=SubmissionsListModule")).data;
+			}
 		}
-	}, "json", "YYYYMMDD");
+
+		console.log("Gamebanana " + category + " Length: " + links.length);
+		console.log(links);
+
+		await handleWebpageTemplate (links, async function returnHackEntry (jsondata, link) {
+			if (typeof jsondata !== "string") {
+				var id        = link.split("?")[0].replace("https://gamebanana.com/" + category + "/", "");
+				var statsData = (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=StatsModule")).data;
+				var temp      = {
+                    name: jsondata.name,
+                    author: jsondata.author.name,
+                    release: jsondata.datePublished.split("T")[0],
+                    originalgame: jsondata.isPartOf.name,
+                    // Always reports PC, it's so unreliable remove it entirely
+                    //system: jsondata.isPartOf.gamePlatform,
+                    system: null,
+                    // View count is an option?? Maybe use it???
+                    downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
+                    type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
+                    url: "https://gamebanana.com/" + category + "/" + id,
+                    source: "gamebanana "
+				};
+				temp.source += category;
+				return temp;
+			} else {
+				// Some projects are listed as private for some reason
+				return undefined;
+			}
+		}, "json", "YYYYMMDD");
+	});
 }
 
 async function moddbModsArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.moddb.com/mods", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -844,6 +957,14 @@ async function moddbModsArchive () {
 }
 
 async function moddbAddonsArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.moddb.com/addons", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -922,6 +1043,14 @@ async function moddbAddonsArchive () {
 }
 
 async function brawlVaultArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -982,6 +1111,14 @@ async function brawlVaultArchive () {
 }
 
 async function quakeWikiArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -1023,6 +1160,14 @@ async function quakeWikiArchive () {
 }
 
 async function nexusModsArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	var link = "https://www.nexusmods.com/mods/";
 	console.log(link);
 	await mainBrowserPage.goto(link, {
@@ -1095,6 +1240,14 @@ async function nexusModsArchive () {
 }
 
 async function curseforgeArchive (type) {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	var urlBase;
 	var game;
 	var system;
@@ -1197,6 +1350,14 @@ async function curseforgeArchive (type) {
 }
 
 async function wolfenVaultArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("http://www.wolfenvault.com/mods.html", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -1281,6 +1442,14 @@ async function wolfenVaultArchive () {
 }
 
 async function halfLifeWikiArchive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://half-life.fandom.com/wiki/Mods", {
 		waitUntil: "domcontentloaded",
 		timeout: 0
@@ -1316,6 +1485,14 @@ async function halfLifeWikiArchive () {
 }
 
 async function runthinkshootliveArchive (type) {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	var urlBase;
 	var game;
 	var system;
@@ -1390,6 +1567,14 @@ async function runthinkshootliveArchive (type) {
 }
 
 async function gta5Archive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -1443,6 +1628,14 @@ async function gta5Archive () {
 }
 
 async function gta5Archive () {
+	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
+	var cachePages      = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded", {
 		waitUntil: "networkidle2",
 		timeout: 0
@@ -1519,13 +1712,7 @@ function dumpCurrentData () {
 (async () => {
 	var name = "database.csv";
 
-	browser         = await puppeteer.launch({ headless: true });
-	mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
+	browser = await puppeteer.launch({ headless: true });
 
 	console.log("Browser opened");
 

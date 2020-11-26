@@ -1,15 +1,15 @@
-const fs = require("fs");
-const axios = require("axios");
-const moment = require("moment");
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-puppeteer.use(StealthPlugin());
+const fs            = require ("fs");
+const axios         = require ("axios");
+const moment        = require ("moment");
+const puppeteer     = require ("puppeteer-extra");
+const StealthPlugin = require ("puppeteer-extra-plugin-stealth");
+puppeteer.use(StealthPlugin ());
 
 var config = {};
 if (fs.existsSync("config.json")) {
-	config = require("./config.json");
+	config = require ("./config.json");
 } else {
-	config = require("./default_config.json");
+	config = require ("./default_config.json");
 }
 
 var allHackEntries = [];
@@ -18,11 +18,18 @@ var csvWriter;
 
 var browser;
 
-var cacheSize = 8;
+var cacheSize      = 8;
 var cacheFlushSize = cacheSize * 1000;
 
-async function handleWebpageTemplate(links, pageCallback, type, dateFormat) {
-	var i = 0;
+async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
+	var i          = 0;
+	var cachePages = [];
+
+	for (let i = 0; i < cacheSize; i++) {
+		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
+		cachePages.push(newPage);
+	}
+
 	do {
 		cachePagePromises = [];
 
@@ -44,9 +51,9 @@ async function handleWebpageTemplate(links, pageCallback, type, dateFormat) {
 
 					try {
 						if (type === "html") {
-							hackEntry = await pageCallback(page, linkHere);
+							hackEntry = await pageCallback (page, linkHere);
 						} else if (type === "json") {
-							hackEntry = await pageCallback(json.data, linkHere);
+							hackEntry = await pageCallback (json.data, linkHere);
 						}
 					} catch (e) {
 						// Last ditch
@@ -65,7 +72,7 @@ async function handleWebpageTemplate(links, pageCallback, type, dateFormat) {
 						// Handle date
 						// Sometimes the release isn't defined
 						if (hackEntry.release) {
-							hackEntry.release = moment(hackEntry.release, dateFormat);
+							hackEntry.release = moment (hackEntry.release, dateFormat);
 							if (!hackEntry.release.isValid())
 								hackEntry.release = null;
 						}
@@ -75,7 +82,7 @@ async function handleWebpageTemplate(links, pageCallback, type, dateFormat) {
 						allHackEntries.push(hackEntry);
 					}
 				}
-			})(page, index);
+			}) (page, index);
 
 			cachePagePromises.push(ret);
 		});
@@ -84,25 +91,20 @@ async function handleWebpageTemplate(links, pageCallback, type, dateFormat) {
 
 		// Occassionally, to preserve memory
 		if (i % cacheFlushSize === 0) {
-			dumpCurrentData();
+			dumpCurrentData ();
 		}
 
 		i += cacheSize;
 	} while (i < links.length);
 
-	dumpCurrentData();
+	dumpCurrentData ();
 }
 
-async function pokemonArchive1() {
-if (!config.included_scrapers.includes(1)) return;
+async function pokemonArchive1 () {
+	if (!config.included_scrapers.includes(1))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://pokemonromhack.com/list", {
 		waitUntil: "domcontentloaded",
@@ -111,56 +113,51 @@ if (!config.included_scrapers.includes(1)) return;
 
 	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = Array.from(document.getElementsByTagName('a'), a => a.href);
-		allLinks = allLinks.slice(21, allLinks.length - 125);
+		allLinks     = allLinks.slice(21, allLinks.length - 125);
 		return allLinks;
 	});
 
 	console.log("Pokemon Archive 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			var system = document.getElementsByClassName("entry-categories")[0].firstElementChild.innerText.split(" ")[0];
 			return {
 				name: document.getElementsByTagName("h1")[0].innerText,
-				author: document.getElementsByTagName("b")[0].innerText,
-				// Release here lacks quite a bit of accuracy
-				release: document.getElementsByTagName("td")[4].innerText,
-				originalgame: document.getElementsByTagName("td")[6].innerText,
-				system: system,
-				downloads: null,
-				type: null,
-				// We can't know
-				important: false,
-				source: "pokemonromhack list"
+					author: document.getElementsByTagName("b")[0].innerText,
+					// Release here lacks quite a bit of accuracy
+					release: document.getElementsByTagName("td")[4].innerText,
+					originalgame: document.getElementsByTagName("td")[6].innerText,
+					system: system,
+					downloads: null,
+					type: null,
+					// We can't know
+					important: false,
+					source: "pokemonromhack list"
 			}
 		});
 	}, "html", "YYYY");
 };
 
-async function generalArchive1() {
-	if (!config.included_scrapers.includes(2)) return;
+async function generalArchive1 () {
+	if (!config.included_scrapers.includes(2))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200", {
-		waitUntil: "domcontentloaded",
-		timeout: 0
-	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[2].start_page;
+	var end   = config.ranges[2].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200&startpage=" + start, {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			var allLinks = Array.from(document.getElementsByClassName("col_1 Title"), a => a.firstElementChild.href);
-			allLinks = allLinks.slice(1, allLinks.length);
+			allLinks     = allLinks.slice(1, allLinks.length);
 			return allLinks;
 		});
 
@@ -169,23 +166,20 @@ async function generalArchive1() {
 		var parts = await mainBrowserPage.evaluate(() => {
 			return document.getElementsByTagName("caption")[0].innerText.split(" ");
 		});
-		parts[2] = parts[2].slice(0, -1);
-		if (parts[2] === parts[4]) {
+		parts[2]  = parts[2].slice(0, -1);
+		if (parts[2] === parts[4] || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200&startpage=" + start, {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("General Archive 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			// There's occassionally an error, I don't know why
 			// Perhaps rate limiting
@@ -200,7 +194,7 @@ async function generalArchive1() {
 				source: "romhacking.net"
 			};
 
-			if (parseInt(temp.downloads) > 1000) {
+			if (parseInt (temp.downloads) > 1000) {
 				temp.important = true;
 			} else {
 				temp.important = false;
@@ -211,26 +205,21 @@ async function generalArchive1() {
 	}, "html", "DDMMMMY");
 }
 
-async function smwArchive1() {
-	if (!config.included_scrapers.includes(3)) return;
+async function smwArchive1 () {
+	if (!config.included_scrapers.includes(3))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks", {
-		waitUntil: "domcontentloaded",
-		timeout: 0
-	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[3].start_page;
+	var end   = config.ranges[3].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
 		});
@@ -241,22 +230,19 @@ async function smwArchive1() {
 			return document.getElementsByTagName("img")[10].src;
 		});
 
-		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif") {
+		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif" || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("Super Mario World 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementsByClassName("cell2")[0].innerText,
@@ -269,14 +255,15 @@ async function smwArchive1() {
 			}
 
 			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
-				temp.type = document.getElementsByClassName("cell2")[7].innerText;
+				temp.type   = document.getElementsByClassName("cell2")[7].innerText;
 				temp.author = document.getElementsByClassName("cell2")[3].innerText;
-			} else {
-				temp.type = document.getElementsByClassName("cell2")[6].innerText;
+			}
+			else {
+				temp.type   = document.getElementsByClassName("cell2")[6].innerText;
 				temp.author = document.getElementsByClassName("cell2")[2].innerText;
 			}
 
-			if (parseInt(temp.downloads) > 1000) {
+			if (parseInt (temp.downloads) > 1000) {
 				temp.important = true;
 			} else {
 				temp.important = false;
@@ -287,26 +274,21 @@ async function smwArchive1() {
 	}, "html", "YYYYMMDD");
 }
 
-async function sm64Archive1() {
-	if (!config.included_scrapers.includes(4)) return;
+async function sm64Archive1 () {
+	if (!config.included_scrapers.includes(4))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks", {
-		waitUntil: "domcontentloaded",
-		timeout: 0
-	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[4].start_page;
+	var end   = config.ranges[4].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks&n=" + start, {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
 		});
@@ -317,22 +299,19 @@ async function sm64Archive1() {
 			return document.getElementsByTagName("img")[10].src;
 		});
 
-		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif") {
+		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif" || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks&n=" + start, {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("Super Mario 64 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementsByClassName("cell2")[0].innerText,
@@ -344,14 +323,15 @@ async function sm64Archive1() {
 			}
 
 			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
-				temp.type = document.getElementsByClassName("cell2")[4].innerText + " " + document.getElementsByClassName("cell2")[6].innerText;
+				temp.type   = document.getElementsByClassName("cell2")[4].innerText + " " + document.getElementsByClassName("cell2")[6].innerText;
 				temp.author = document.getElementsByClassName("cell2")[3].innerText;
-			} else {
-				temp.type = document.getElementsByClassName("cell2")[5].innerText + " " + document.getElementsByClassName("cell2")[7].innerText;
+			}
+			else {
+				temp.type   = document.getElementsByClassName("cell2")[5].innerText + " " + document.getElementsByClassName("cell2")[7].innerText;
 				temp.author = document.getElementsByClassName("cell2")[2].innerText;
 			}
 
-			if (parseInt(temp.downloads) > 1000) {
+			if (parseInt (temp.downloads) > 1000) {
 				temp.important = true;
 			} else {
 				temp.important = false;
@@ -362,26 +342,21 @@ async function sm64Archive1() {
 	}, "html", "YYYYMMDD");
 }
 
-async function yoshisIslandArchive1() {
-	if (!config.included_scrapers.includes(5)) return;
+async function yoshisIslandArchive1 () {
+	if (!config.included_scrapers.includes(5))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks", {
-		waitUntil: "domcontentloaded",
-		timeout: 0
-	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[5].start_page;
+	var end   = config.ranges[5].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks&n=" + start, {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			return Array.from(document.getElementsByClassName("gray small"), a => a.previousElementSibling.previousElementSibling.href);
 		});
@@ -392,22 +367,19 @@ async function yoshisIslandArchive1() {
 			return document.getElementsByTagName("img")[10].src;
 		});
 
-		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif") {
+		if (nextButtonImg === "https://www.smwcentral.net/images/next_mono.gif" || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks&n=" + start, {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("Yoshi's Island 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			var temp = {
 				name: document.getElementsByClassName("cell2")[0].innerText,
@@ -420,14 +392,15 @@ async function yoshisIslandArchive1() {
 			}
 
 			if (document.getElementsByClassName("cell1")[3].innerText === "Version History:") {
-				temp.type = document.getElementsByClassName("cell2")[5].innerText;
+				temp.type   = document.getElementsByClassName("cell2")[5].innerText;
 				temp.author = document.getElementsByClassName("cell2")[3].innerText;
-			} else {
-				temp.type = document.getElementsByClassName("cell2")[4].innerText;
+			}
+			else {
+				temp.type   = document.getElementsByClassName("cell2")[4].innerText;
 				temp.author = document.getElementsByClassName("cell2")[2].innerText;
 			}
 
-			if (parseInt(temp.downloads) > 1000) {
+			if (parseInt (temp.downloads) > 1000) {
 				temp.important = true;
 			} else {
 				temp.important = false;
@@ -438,16 +411,11 @@ async function yoshisIslandArchive1() {
 	}, "html", "YYYYMMDD");
 }
 
-async function sm64Archive2() {
-	if (!config.included_scrapers.includes(6)) return;
+async function sm64Archive2 () {
+	if (!config.included_scrapers.includes(6))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks", {
 		waitUntil: "domcontentloaded",
@@ -459,9 +427,9 @@ async function sm64Archive2() {
 
 		for (var tables = 0; tables < 4; tables++) {
 			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
-					return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
-				})
-				.map(element => element.firstElementChild.firstElementChild.href));
+																																return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
+																															})
+										   .map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		var haveReachedPoint = false;
@@ -486,7 +454,7 @@ async function sm64Archive2() {
 	console.log("Super Mario 64 2 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		var shouldInclude = await page.evaluate(() => {
 			return document.getElementsByClassName("pi-data-value pi-font").length != 0;
 		});
@@ -504,11 +472,11 @@ async function sm64Archive2() {
 				};
 
 				if (document.getElementsByClassName("pi-data-label pi-secondary-font")[1].innerText === "Published") {
-					temp.release = document.getElementsByClassName("pi-data-value pi-font")[1].innerText;
-					temp.important = parseInt(document.getElementsByClassName("pi-data-value pi-font")[2].innerText) >= 70;
+					temp.release   = document.getElementsByClassName("pi-data-value pi-font")[1].innerText;
+					temp.important = parseInt (document.getElementsByClassName("pi-data-value pi-font")[2].innerText) >= 70;
 				} else {
-					temp.release = null;
-					temp.important = parseInt(document.getElementsByClassName("pi-data-value pi-font")[1].innerText) >= 70;
+					temp.release   = null;
+					temp.important = parseInt (document.getElementsByClassName("pi-data-value pi-font")[1].innerText) >= 70;
 				}
 
 				return temp;
@@ -519,16 +487,11 @@ async function sm64Archive2() {
 	}, "html", ["MMMMDDYYYY", "DDMMMMYYYY"]);
 };
 
-async function sm64DSArchive1() {
-	if (!config.included_scrapers.includes(7)) return;
+async function sm64DSArchive1 () {
+	if (!config.included_scrapers.includes(7))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
 		waitUntil: "domcontentloaded",
@@ -540,9 +503,9 @@ async function sm64DSArchive1() {
 
 		for (var tables = 0; tables < 5; tables++) {
 			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
-					return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
-				})
-				.map(element => element.firstElementChild.firstElementChild.href));
+																																return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
+																															})
+										   .map(element => element.firstElementChild.firstElementChild.href));
 		}
 
 		return allLinks;
@@ -551,7 +514,7 @@ async function sm64DSArchive1() {
 	console.log("Super Mario 64 DS 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		var shouldInclude = await page.evaluate(() => {
 			return document.getElementsByClassName("pi-data-value pi-font").length != 0;
 		});
@@ -569,11 +532,11 @@ async function sm64DSArchive1() {
 				};
 
 				if (document.getElementsByClassName("pi-data-label pi-secondary-font")[1].innerText === "Published") {
-					temp.release = document.getElementsByClassName("pi-data-value pi-font")[1].innerText.replace("Demo: ", "");
-					temp.important = parseInt(document.getElementsByClassName("pi-data-value pi-font")[2].innerText) >= 70;
+					temp.release   = document.getElementsByClassName("pi-data-value pi-font")[1].innerText.replace("Demo: ", "");
+					temp.important = parseInt (document.getElementsByClassName("pi-data-value pi-font")[2].innerText) >= 70;
 				} else {
-					temp.release = null;
-					temp.important = parseInt(document.getElementsByClassName("pi-data-value pi-font")[1].innerText) >= 70;
+					temp.release   = null;
+					temp.important = parseInt (document.getElementsByClassName("pi-data-value pi-font")[1].innerText) >= 70;
 				}
 
 				return temp;
@@ -584,16 +547,11 @@ async function sm64DSArchive1() {
 	}, "html", ["MMMMDDYYYY", "DDMMMMYYYY"]);
 };
 
-async function pokemonArchive2() {
-	if (!config.included_scrapers.includes(8)) return;
+async function pokemonArchive2 () {
+	if (!config.included_scrapers.includes(8))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
 		waitUntil: "domcontentloaded",
@@ -610,7 +568,7 @@ async function pokemonArchive2() {
 	console.log("Pokemon Archive 2 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		var hackEntry;
 
 		var isNormalLayout = await page.evaluate(() => {
@@ -650,15 +608,15 @@ async function pokemonArchive2() {
 				} else {
 					return {
 						name: document.getElementsByClassName("post-title entry-title")[0].innerText,
-						author: document.getElementsByClassName("pblock")[0].children[14].innerText,
-						// Not the release date sadly, only the update time
-						release: document.getElementsByTagName("h4")[1].innerText.replace("Updated: ", ""),
-						originalgame: gameMapping[document.getElementsByClassName("pblock")[0].children[8].nextSibling],
-						system: document.getElementsByClassName("pblock")[0].children[6].innerText,
-						downloads: null,
-						type: null,
-						// We can't know
-						important: false
+							author: document.getElementsByClassName("pblock")[0].children[14].innerText,
+							// Not the release date sadly, only the update time
+							release: document.getElementsByTagName("h4")[1].innerText.replace("Updated: ", ""),
+							originalgame: gameMapping[document.getElementsByClassName("pblock")[0].children[8].nextSibling],
+							system: document.getElementsByClassName("pblock")[0].children[6].innerText,
+							downloads: null,
+							type: null,
+							// We can't know
+							important: false
 					}
 				}
 			}, gameMapping);
@@ -667,7 +625,7 @@ async function pokemonArchive2() {
 			hackEntry = await page.evaluate((gameMapping) => {
 				var start = document.getElementsByTagName("h4")[3];
 
-				function advanceForwards(element, numberOfElements) {
+				function advanceForwards (element, numberOfElements) {
 					for (let i = 0; i < numberOfElements; i++) {
 						element = element.nextSibling;
 					}
@@ -675,17 +633,17 @@ async function pokemonArchive2() {
 				}
 
 				return {
-					name: advanceForwards(start, 1).textContent.replace("\nName: ", ""),
-					author: advanceForwards(start, 7).textContent.replace("\nCreator: ", ""),
-					// Not the release date sadly, only the update time
-					release: document.getElementsByTagName("h4")[1].innerText.replace("Updated on- ", ""),
-					originalgame: gameMapping[advanceForwards(start, 3).textContent.replace("\nHack of", "")],
-					system: document.getElementsByClassName("post-title entry-title")[0].innerText.split(" ").pop(),
-					downloads: null,
-					type: null,
-					// We can't know
-					important: false,
-					source: "gbahacks.com"
+					name: advanceForwards (start, 1).textContent.replace("\nName: ", ""),
+						author: advanceForwards (start, 7).textContent.replace("\nCreator: ", ""),
+						// Not the release date sadly, only the update time
+						release: document.getElementsByTagName("h4")[1].innerText.replace("Updated on- ", ""),
+						originalgame: gameMapping[advanceForwards (start, 3).textContent.replace("\nHack of", "")],
+						system: document.getElementsByClassName("post-title entry-title")[0].innerText.split(" ").pop(),
+						downloads: null,
+						type: null,
+						// We can't know
+						important: false,
+						source: "gbahacks.com"
 				}
 			}, gameMapping);
 		}
@@ -694,16 +652,11 @@ async function pokemonArchive2() {
 	}, "html", ["MMMMDDYYYY", "DDMMMMYYYY"]);
 };
 
-async function smspowerArchive1() {
-	if (!config.included_scrapers.includes(9)) return;
+async function smspowerArchive1 () {
+	if (!config.included_scrapers.includes(9))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://www.smspower.org/Hacks/GameModifications", {
 		waitUntil: "domcontentloaded",
@@ -718,7 +671,7 @@ async function smspowerArchive1() {
 	console.log("Sega Archive 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			var systemMapping = {
 				"Mod (SMS)": "Sega Master System",
@@ -728,43 +681,44 @@ async function smspowerArchive1() {
 			var parts = document.getElementsByClassName("pagetitle")[0].innerText.split(" - ");
 			return {
 				name: parts[1],
-				author: document.getElementsByTagName("td")[5].innerText,
-				release: document.getElementsByTagName("td")[4].innerText,
-				originalgame: parts[0],
-				system: systemMapping[parts[2]],
-				downloads: null,
-				type: null,
-				// We can't know
-				important: false,
-				source: "smspower.org"
+					author: document.getElementsByTagName("td")[5].innerText,
+					release: document.getElementsByTagName("td")[4].innerText,
+					originalgame: parts[0],
+					system: systemMapping[parts[2]],
+					downloads: null,
+					type: null,
+					// We can't know
+					important: false,
+					source: "smspower.org"
 			}
 		});
 	}, "html", ["YYYY", "DDMMMMYYYY"]);
 };
 
-async function atari2600Archive() {
-	if (!config.included_scrapers.includes(10)) return;
+async function atari2600Archive () {
+	if (!config.included_scrapers.includes(10))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
+	var cachePages      = [];
 
 	for (let i = 0; i < cacheSize; i++) {
 		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
 		cachePages.push(newPage);
 	}
 
-	await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600", {
-		waitUntil: "networkidle2",
-		timeout: 0
-	});
-
 	var links = [];
-	var start = 0;
+	var start = config.ranges[10].start_page;
+	var end   = config.ranges[10].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600&currentPage=" + (start - 1), {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			var allLinks = Array.from(document.getElementsByTagName("tbody")[17].children);
-			allLinks = allLinks.slice(1, allLinks.length - 1).map(a => a.firstElementChild.firstElementChild.href);
+			allLinks     = allLinks.slice(1, allLinks.length - 1).map(a => a.firstElementChild.firstElementChild.href);
 			return allLinks;
 		});
 
@@ -775,22 +729,19 @@ async function atari2600Archive() {
 			return table[table.length - 4].innerText !== "Next";
 		});
 
-		if (shouldBreak) {
+		if (shouldBreak || start === end) {
 			// This is the last page
 			break;
 		} else {
-			console.log("Handled page " + (start + 1));
+			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600&currentPage=" + start, {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("Atari 2600 1 Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		return page.evaluate(() => {
 			var infoTable = document.querySelector("[cellspacing='0'][cellpadding='4']").firstElementChild.children;
 
@@ -811,59 +762,56 @@ async function atari2600Archive() {
 	}, "html", "YYYY");
 }
 
-async function gamebananaArchive(category) {
-	if (!config.included_scrapers.includes(11) && category === "projects") return;
-	if (!config.included_scrapers.includes(12) && category === "maps") return;
-	if (!config.included_scrapers.includes(13) && category === "skins") return;
+async function gamebananaArchive (category) {
+	var indices = {
+		projects: 11,
+		maps: 12,
+		skins: 13
+	};
 
-	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	var projectList = (await axios.get("https://gamebanana.com/" + category + "?vl[page]=1&mid=SubmissionsList&/" + category + "=&api=SubmissionsListModule")).data;
+	if (!config.included_scrapers.includes(indices[category]))
+		return;
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[indices[category]].start_page;
+	var end   = config.ranges[indices[category]].end_page;
 
 	while (true) {
+		var projectList = (await axios.get("https://gamebanana.com/" + category + "?vl[page]=" + start + "&mid=SubmissionsList&/" + category + "=&api=SubmissionsListModule")).data;
+
 		var partialLinks = projectList._aCellValues.filter(project => !(project._aGame._sName === "GameBanana" || project._aGame._sName === "Steam" || project._aGame._sName === "Unity 3D" || project._aGame._sName === "Unreal Engine 4")).map(project => "https://gamebanana.com/" + category + "/" + project._idItemRow + "?api=StructuredDataModule");
 
 		links = links.concat(partialLinks);
 
-		if (projectList._aCellValues.length === 0) {
+		if (projectList._aCellValues.length === 0 || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			var projectList = (await axios.get("https://gamebanana.com/" + category + "?vl[page]=" + start + "&mid=SubmissionsList&/" + category + "=&api=SubmissionsListModule")).data;
 		}
 	}
 
 	console.log("Gamebanana " + category + " Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(jsondata, link) {
+	await handleWebpageTemplate (links, async function returnHackEntry (jsondata, link) {
 		if (typeof jsondata !== "string") {
-			var id = link.split("?")[0].replace("https://gamebanana.com/" + category + "/", "");
+			var id        = link.split("?")[0].replace("https://gamebanana.com/" + category + "/", "");
 			var statsData = (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=StatsModule")).data;
-			var temp = {
-				name: jsondata.name,
-				author: jsondata.author.name,
-				release: jsondata.datePublished.split("T")[0],
-				originalgame: jsondata.isPartOf.name,
-				// Always reports PC, it's so unreliable remove it entirely
-				//system: jsondata.isPartOf.gamePlatform,
-				system: null,
-				// View count is an option?? Maybe use it???
-				downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
-				type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
-				url: "https://gamebanana.com/" + category + "/" + id,
-				source: "gamebanana "
+			var temp      = {
+                name: jsondata.name,
+                author: jsondata.author.name,
+                release: jsondata.datePublished.split("T")[0],
+                originalgame: jsondata.isPartOf.name,
+                // Always reports PC, it's so unreliable remove it entirely
+                //system: jsondata.isPartOf.gamePlatform,
+                system: null,
+                // View count is an option?? Maybe use it???
+                downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
+                type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
+                url: "https://gamebanana.com/" + category + "/" + id,
+                source: "gamebanana "
 			};
 			temp.source += category;
 			return temp;
@@ -874,26 +822,21 @@ async function gamebananaArchive(category) {
 	}, "json", "YYYYMMDD");
 }
 
-async function moddbModsArchive() {
-	if (!config.included_scrapers.includes(14)) return;
+async function moddbModsArchive () {
+	if (!config.included_scrapers.includes(14))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	await mainBrowserPage.goto("https://www.moddb.com/mods", {
-		waitUntil: "networkidle2",
-		timeout: 0
-	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[14].start_page;
+	var end   = config.ranges[14].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://www.moddb.com/mods/page/" + start + "#modsbrowse", {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			// Some addons are bundled with mods, we don't need that
 			var allLinks = Array.from(document.getElementsByClassName("rowcontent")).map(project => project.children[1].children[1].firstElementChild.href);
@@ -907,26 +850,23 @@ async function moddbModsArchive() {
 			return parts[3] === parts[5].replace(",", "").replace(")", "");
 		});
 
-		if (shouldBreak) {
+		if (shouldBreak || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.moddb.com/mods/page/" + start + "#modsbrowse", {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("ModDB Mods Archive Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var part = await page.evaluate(() => {
 			var rowList = Array.from(document.getElementsByClassName("row clear"));
 
-			var release = null;
+			var release        = null;
 			var releaseElement = rowList.filter(item => item.firstElementChild.innerText === "Release date")[0].children[1].firstElementChild;
 			if (releaseElement.innerText !== "TBD") {
 				release = releaseElement.dateTime;
@@ -959,33 +899,28 @@ async function moddbModsArchive() {
 
 		part.downloads = await page.evaluate(() => {
 			var rowList = Array.from(document.getElementsByClassName("row clear"));
-			return parseInt(rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""));
+			return parseInt (rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""));
 		});
 
 		return part;
 	}, "html", "MMMMDDYYYY");
 }
 
-async function moddbAddonsArchive() {
-	if (!config.included_scrapers.includes(15)) return;
+async function moddbAddonsArchive () {
+	if (!config.included_scrapers.includes(15))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
-
-	await mainBrowserPage.goto("https://www.moddb.com/addons", {
-		waitUntil: "networkidle2",
-		timeout: 0
-	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[15].start_page;
+	var end   = config.ranges[15].end_page;
 
 	while (true) {
+		await mainBrowserPage.goto("https://www.moddb.com/addons/page/" + start + "#addonsbrowse", {
+			waitUntil: "domcontentloaded"
+		});
+
 		var partialLinks = await mainBrowserPage.evaluate(() => {
 			// Some addons are bundled with mods, we don't need that
 			var allLinks = Array.from(document.getElementsByClassName("rowcontent")).map(project => project.children[1].children[1].firstElementChild.href).filter(link => link && !link.includes("/mods/"))
@@ -999,22 +934,19 @@ async function moddbAddonsArchive() {
 			return parts[3] === parts[5].replace(",", "").replace(")", "");
 		});
 
-		if (shouldBreak) {
+		if (shouldBreak || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.moddb.com/addons/page/" + start + "#addonsbrowse", {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("ModDB Addons Archive Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var part = await page.evaluate(() => {
 			var rowList = Array.from(document.getElementsByClassName("row clear"));
 
@@ -1047,23 +979,18 @@ async function moddbAddonsArchive() {
 
 		part.downloads = await page.evaluate(() => {
 			var rowList = Array.from(document.getElementsByClassName("row clear"));
-			return parseInt(rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""));
+			return parseInt (rowList.filter(item => item.firstElementChild.innerText === "Downloads")[0].children[1].innerText.split(" ")[0].replace(/\,/g, ""));
 		});
 
 		return part;
 	}, "html", ["YYYY", "MMMMYYYY", "MMMMDDYYYY"]);
 }
 
-async function brawlVaultArchive() {
-	if (!config.included_scrapers.includes(16)) return;
+async function brawlVaultArchive () {
+	if (!config.included_scrapers.includes(16))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack", {
 		waitUntil: "networkidle2",
@@ -1072,10 +999,13 @@ async function brawlVaultArchive() {
 
 	var lastPage = await mainBrowserPage.evaluate(() => {
 		var pagesArray = document.getElementsByClassName("hackPages")[0].children[0].children;
-		return parseInt(document.getElementsByClassName("hackPages")[0].children[0].children[pagesArray.length - 1].dataset.page);
+		return parseInt (document.getElementsByClassName("hackPages")[0].children[0].children[pagesArray.length - 1].dataset.page);
 	});
 
-	for (let page = 1; page <= lastPage; page++) {
+	var start = config.ranges[16].start_page;
+	var end   = config.ranges[16].end_page;
+
+	for (let page = start; page <= (end === -1 ? lastPage : end); page++) {
 		var pageLink = "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack&action=changePage&Page=" + page + "&timeFrame=-1";
 		console.log(pageLink);
 		await mainBrowserPage.goto(pageLink, {
@@ -1087,7 +1017,7 @@ async function brawlVaultArchive() {
 			var tempData = [];
 			var hackList = document.getElementById("hackHolder").children;
 			Array.from(hackList).forEach(function (hackContainer) {
-				var authors = [];
+				var authors     = [];
 				var authorIndex = 2;
 				var readAuthors = true;
 				while (readAuthors) {
@@ -1105,7 +1035,7 @@ async function brawlVaultArchive() {
 					release: hackContainer.children[0].children[2].nextSibling.textContent.trimLeft(),
 					originalgame: "Super Smash Bros Brawl",
 					system: "Wii",
-					downloads: parseInt(hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
+					downloads: parseInt (hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
 					type: hackContainer.children[authors.length + 4].innerText.slice(1, -1),
 					// None have dedicated pages, redirect to master page
 					url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack",
@@ -1117,25 +1047,20 @@ async function brawlVaultArchive() {
 		});
 
 		tempData.forEach(function (hack) {
-			hack.release = moment(hack.release, "MMMMDDYYYY");
+			hack.release = moment (hack.release, "MMMMDDYYYY");
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
 	}
 
-	dumpCurrentData();
+	dumpCurrentData ();
 }
 
-async function quakeWikiArchive() {
-	if (!config.included_scrapers.includes(17)) return;
+async function quakeWikiArchive () {
+	if (!config.included_scrapers.includes(17))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/", {
 		waitUntil: "networkidle2",
@@ -1150,14 +1075,14 @@ async function quakeWikiArchive() {
 	console.log("Quake Wiki Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var temp = await page.evaluate(() => {
 			var downloadLinks = document.getElementsByClassName("download-link");
-			var downloads = null;
+			var downloads     = null;
 			if (downloadLinks.length !== 0) {
-				var downloadText = [0].innerText;
+				var downloadText          = [0].innerText;
 				var startDownloadTextSnip = document.getElementsByClassName("download-link")[0].innerText.indexOf("(") + 1;
-				downloads = parseInt(downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", ""));
+				downloads                 = parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", ""));
 			}
 
 			return {
@@ -1177,16 +1102,11 @@ async function quakeWikiArchive() {
 	}, "html", "YYYYMMDD");
 }
 
-async function nexusModsArchive() {
-	if (!config.included_scrapers.includes(18)) return;
+async function nexusModsArchive () {
+	if (!config.included_scrapers.includes(18))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	var link = "https://www.nexusmods.com/mods/";
 	console.log(link);
@@ -1195,7 +1115,20 @@ async function nexusModsArchive() {
 		timeout: 0
 	});
 
+	var start = config.ranges[18].start_page;
+	var end   = config.ranges[18].end_page;
+
 	while (true) {
+		await mainBrowserPage.evaluate((page) => {
+			window.RH_ModList.Send('page', page.toString());
+		}, start);
+
+		await mainBrowserPage.waitFor(100);
+		await mainBrowserPage.waitForSelector("loading-wheel", {
+			hidden: true
+		});
+		await mainBrowserPage.waitFor(1000);
+
 		var tempData = await mainBrowserPage.evaluate(() => {
 			var tempData = [];
 			var hackList = document.getElementsByClassName("tiles")[0].children;
@@ -1207,11 +1140,11 @@ async function nexusModsArchive() {
 				if (downloadsString === "--") {
 					downloadNumber = 0;
 				} else if (downloadsString.endsWith("k")) {
-					downloadNumber = parseFloat(downloadsString.slice(0, -1)) * 1000;
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
 				} else if (downloadsString.endsWith("M")) {
-					downloadNumber = parseFloat(downloadsString.slice(0, -1)) * 1000000;
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
 				} else {
-					downloadNumber = parseInt(downloadsString);
+					downloadNumber = parseInt (downloadsString);
 				}
 
 				tempData.push({
@@ -1231,39 +1164,28 @@ async function nexusModsArchive() {
 		});
 
 		tempData.forEach(function (hack) {
-			hack.release = moment(hack.release, "YYYYMMDD HHSS");
+			hack.release = moment (hack.release, "YYYYMMDD HHSS");
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
 
-		var nextPage = await mainBrowserPage.evaluate(() => {
+		var canFlip = await mainBrowserPage.evaluate(() => {
 			var nextPage = document.getElementsByClassName("page-selected mfp-prevent-close")[0].parentElement.nextElementSibling;
-			if (nextPage) {
-				return nextPage.innerText;
-			} else {
-				return 0;
-			}
+			return nextPage ? true : false;
 		});
 
-		if (nextPage) {
-			await mainBrowserPage.evaluate((page) => {
-				window.RH_ModList.Send('page', page.toString());
-			}, nextPage);
-
-			await mainBrowserPage.waitFor(100);
-			await mainBrowserPage.waitForSelector("loading-wheel", {
-				hidden: true
-			});
-			await mainBrowserPage.waitFor(1000);
+		if (!canFlip || nextPage === (end + 1)) {
+			break;
 		} else {
-			return;
+			console.log("Handled page " + start);
+			start++;
 		}
 	}
 
-	dumpCurrentData();
+	dumpCurrentData ();
 }
 
-async function curseforgeArchive(type) {
+async function curseforgeArchive (type) {
 	var urlBase;
 	var game;
 	var system;
@@ -1294,19 +1216,14 @@ async function curseforgeArchive(type) {
 
 	if (urlMatcher[type]) {
 		urlBase = urlMatcher[type][0];
-		game = urlMatcher[type][1];
-		system = urlMatcher[type][2];
+		game    = urlMatcher[type][1];
+		system  = urlMatcher[type][2];
 
-		if (!config.included_scrapers.includes(urlMatcher[type][3])) return;
+		if (!config.included_scrapers.includes(urlMatcher[type][3]))
+			return;
 	}
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto(urlBase, {
 		waitUntil: "domcontentloaded",
@@ -1319,11 +1236,14 @@ async function curseforgeArchive(type) {
 			return 1;
 		} else {
 			var pagesArray = [0].children;
-			return parseInt(pagesArray[pagesArray.length - 2].innerText);
+			return parseInt (pagesArray[pagesArray.length - 2].innerText);
 		}
 	});
 
-	for (let page = 1; page <= lastPage; page++) {
+	var start = config.ranges[urlMatcher[type][3]].start_page;
+	var end   = config.ranges[urlMatcher[type][3]].end_page;
+
+	for (let page = start; page <= (end === -1 ? lastPage : end); page++) {
 		var pageLink = urlBase + "?page=" + page;
 		console.log(pageLink);
 		await mainBrowserPage.goto(pageLink, {
@@ -1340,11 +1260,11 @@ async function curseforgeArchive(type) {
 				var downloadsString = container.children[1].children[1].children[0].innerText.replace(" Downloads", "");
 				var downloadNumber;
 				if (downloadsString.endsWith("K")) {
-					downloadNumber = parseFloat(downloadsString.slice(0, -1)) * 1000;
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
 				} else if (downloadsString.endsWith("M")) {
-					downloadNumber = parseFloat(downloadsString.slice(0, -1)) * 1000000;
+					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
 				} else {
-					downloadNumber = parseInt(downloadsString);
+					downloadNumber = parseInt (downloadsString);
 				}
 
 				var types = Array.from(container.children[2].children[1].children).map(function (typeImage) {
@@ -1366,27 +1286,22 @@ async function curseforgeArchive(type) {
 		});
 
 		tempData.forEach(function (hack) {
-			hack.release = moment(hack.release, "MMMMDDYYYY");
+			hack.release      = moment (hack.release, "MMMMDDYYYY");
 			hack.originalgame = game;
-			hack.system = system;
+			hack.system       = system;
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
 	}
 
-	dumpCurrentData();
+	dumpCurrentData ();
 }
 
-async function wolfenVaultArchive() {
-	if (!config.included_scrapers.includes(39)) return;
+async function wolfenVaultArchive () {
+	if (!config.included_scrapers.includes(39))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("http://www.wolfenvault.com/mods.html", {
 		waitUntil: "networkidle2",
@@ -1396,18 +1311,18 @@ async function wolfenVaultArchive() {
 	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = [];
 
-		function addToTotalLinks(item) {
+		function addToTotalLinks (item) {
 			allLinks = allLinks.concat(Array.from(item.children).map(item => item.firstElementChild.href));
-			item = item.nextElementSibling;
+			item     = item.nextElementSibling;
 			allLinks = allLinks.concat(Array.from(item.children).map(item => item.firstElementChild.href));
-			item = item.nextElementSibling;
+			item     = item.nextElementSibling;
 			allLinks = allLinks.concat(Array.from(item.children).map(item => item.firstElementChild.href));
 		}
 
-		addToTotalLinks(document.querySelector("table.auto-style17:nth-child(2) > tbody:nth-child(1) > tr:nth-child(2)"));
-		addToTotalLinks(document.querySelector("table.auto-style17:nth-child(4) > tbody:nth-child(1) > tr:nth-child(2)"));
-		addToTotalLinks(document.querySelector("table.auto-style17:nth-child(6) > tbody:nth-child(1) > tr:nth-child(2)"));
-		addToTotalLinks(document.querySelector("table.auto-style17:nth-child(8) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(2) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(4) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(6) > tbody:nth-child(1) > tr:nth-child(2)"));
+		addToTotalLinks (document.querySelector("table.auto-style17:nth-child(8) > tbody:nth-child(1) > tr:nth-child(2)"));
 
 		return allLinks;
 	});
@@ -1459,10 +1374,10 @@ async function wolfenVaultArchive() {
 		}
 
 		tempData.forEach(function (hack) {
-			hack.release = moment(hack.release, "MMDDYY");
+			hack.release      = moment (hack.release, "MMDDYY");
 			hack.originalgame = gameName;
-			hack.system = "PC";
-			hack.url = link;
+			hack.system       = "PC";
+			hack.url          = link;
 			if (link.includes("tcs"))
 				hack.type += ", Modified EXE";
 			console.log(hack);
@@ -1470,19 +1385,14 @@ async function wolfenVaultArchive() {
 		});
 	}
 
-	dumpCurrentData();
+	dumpCurrentData ();
 }
 
-async function halfLifeWikiArchive() {
-	if (!config.included_scrapers.includes(40)) return;
+async function halfLifeWikiArchive () {
+	if (!config.included_scrapers.includes(40))
+		return;
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
-
-	for (let i = 0; i < cacheSize; i++) {
-		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
-		cachePages.push(newPage);
-	}
 
 	await mainBrowserPage.goto("https://half-life.fandom.com/wiki/Mods", {
 		waitUntil: "domcontentloaded",
@@ -1498,7 +1408,7 @@ async function halfLifeWikiArchive() {
 	console.log("Half Life Wiki Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var temp = await page.evaluate(() => {
 			return {
 				name: document.querySelector("[data-source='name']").innerText,
@@ -1518,9 +1428,9 @@ async function halfLifeWikiArchive() {
 	}, "html", "MMMMYYYY");
 }
 
-async function runthinkshootliveArchive(type) {
+async function runthinkshootliveArchive (type) {
 	var urlMatcher = {
-		"hl": ["https://www.runthinkshootlive.com/hl", "Half Life", "PC",41],
+		"hl": ["https://www.runthinkshootlive.com/hl", "Half Life", "PC", 41],
 		"of": ["https://www.runthinkshootlive.com/of", "Opposing Force", "PC", 42],
 		"hl2": ["https://www.runthinkshootlive.com/hl2", "Half Life 2", "PC", 43],
 		"ep1": ["https://www.runthinkshootlive.com/ep1", "Half Life 2, Episode 1", "PC", 44],
@@ -1530,14 +1440,15 @@ async function runthinkshootliveArchive(type) {
 
 	if (urlMatcher[type]) {
 		urlBase = urlMatcher[type][0];
-		game = urlMatcher[type][1];
-		system = urlMatcher[type][2];
+		game    = urlMatcher[type][1];
+		system  = urlMatcher[type][2];
 
-		if (!config.included_scrapers.includes(urlMatcher[type][3])) return;
+		if (!config.included_scrapers.includes(urlMatcher[type][3]))
+			return;
 	}
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
+	var cachePages      = [];
 
 	for (let i = 0; i < cacheSize; i++) {
 		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
@@ -1557,7 +1468,7 @@ async function runthinkshootliveArchive(type) {
 
 	var lastPage = await mainBrowserPage.evaluate(() => {
 		var pageListContainer = document.getElementsByClassName("dataTables_paginate paging_simple_numbers")[0].children[1].children;
-		return parseInt(pageListContainer[pageListContainer.length - 1].innerText);
+		return parseInt (pageListContainer[pageListContainer.length - 1].innerText);
 	});
 
 	for (let page = 1; page <= lastPage; page++) {
@@ -1577,7 +1488,7 @@ async function runthinkshootliveArchive(type) {
 					name: hackContainer.children[0].innerText,
 					author: hackContainer.children[4].innerText,
 					release: date,
-					downloads: parseInt(hackContainer.children[5].innerText),
+					downloads: parseInt (hackContainer.children[5].innerText),
 					type: hackContainer.children[10].innerText + ", " + hackContainer.children[11].innerText + ", " + hackContainer.children[12].innerText,
 					url: hackContainer.children[0].firstElementChild.href,
 					source: "runthinkshootlive"
@@ -1588,9 +1499,9 @@ async function runthinkshootliveArchive(type) {
 		});
 
 		tempData.forEach(function (hack) {
-			hack.release = moment(hack.release, "DDMMMMYYYY");
+			hack.release      = moment (hack.release, "DDMMMMYYYY");
 			hack.originalgame = game;
-			hack.system = system;
+			hack.system       = system;
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
@@ -1600,14 +1511,15 @@ async function runthinkshootliveArchive(type) {
 		}
 	}
 
-	dumpCurrentData();
+	dumpCurrentData ();
 }
 
-async function gta5Archive() {
-	if (!config.included_scrapers.includes(47)) return;
-	
+async function gta5Archive () {
+	if (!config.included_scrapers.includes(47))
+		return;
+
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
-	var cachePages = [];
+	var cachePages      = [];
 
 	for (let i = 0; i < cacheSize; i++) {
 		var newPage = await (await browser.createIncognitoBrowserContext()).newPage();
@@ -1620,12 +1532,16 @@ async function gta5Archive() {
 	});
 
 	var links = [];
-	var start = 1;
+	var start = config.ranges[47].start_page;
+	var end   = config.ranges[47].end_page;
 
 	while (true) {
-		var partialLinks = await mainBrowserPage.evaluate(() => {
-			return Array.from(document.getElementsByClassName("file-list")[0].firstElementChild.children).map(item => item.firstElementChild.firstElementChild.href)
+		await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded/" + start, {
+			waitUntil: "domcontentloaded"
 		});
+
+		var partialLinks = await mainBrowserPage.evaluate(() => {
+															  return Array.from(document.getElementsByClassName("file-list")[0].firstElementChild.children).map(item => item.firstElementChild.firstElementChild.href) });
 
 		links = links.concat(partialLinks);
 
@@ -1633,33 +1549,30 @@ async function gta5Archive() {
 			document.getElementsByClassName("next disabled").length !== 0;
 		});
 
-		if (shouldBreak) {
+		if (shouldBreak || start === end) {
 			// This is the last page
 			break;
 		} else {
 			console.log("Handled page " + start);
 			start++;
-			await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded/" + start, {
-				waitUntil: "domcontentloaded"
-			});
 		}
 	}
 
 	console.log("GTAV Mods Archive Length: " + links.length);
 	console.log(links);
 
-	await handleWebpageTemplate(links, async function returnHackEntry(page, link) {
+	await handleWebpageTemplate (links, async function returnHackEntry (page, link) {
 		var part = await page.evaluate(() => {
 			return {
 				name: document.getElementsByClassName("clearfix")[1].innerText.trim(),
-				author: document.getElementsByClassName("username")[0].innerText,
-				release: document.getElementById("file-dates").children[1].innerText.replace("\nFirst Uploaded:\n", "").replace("\n", ""),
-				originalgame: "GTA V",
-				system: "PC",
-				type: document.getElementById("tag-list").innerText.trim().replace(/\s+/g, ", "),
-				important: false,
-				downloads: parseInt(document.getElementsByClassName("file-stat file-downloads pull-left")[0].firstElementChild.innerText.replace(/\,/g, "")),
-				source: "gtav mods"
+					author: document.getElementsByClassName("username")[0].innerText,
+					release: document.getElementById("file-dates").children[1].innerText.replace("\nFirst Uploaded:\n", "").replace("\n", ""),
+					originalgame: "GTA V",
+					system: "PC",
+					type: document.getElementById("tag-list").innerText.trim().replace(/\s+/g, ", "),
+					important: false,
+					downloads: parseInt (document.getElementsByClassName("file-stat file-downloads pull-left")[0].firstElementChild.innerText.replace(/\,/g, "")),
+					source: "gtav mods"
 			}
 		});
 		part.url = link;
@@ -1667,7 +1580,7 @@ async function gta5Archive() {
 	}, "html", "MMMMDDYYYY");
 }
 
-function dumpCurrentData() {
+function dumpCurrentData () {
 	allHackEntries.forEach((input) => {
 		var data = [
 			input.name ? '"' + input.name.replace(/\"/g, "'") + '"' : "",
@@ -1706,163 +1619,165 @@ function dumpCurrentData() {
 	// All pages are scraped at exactly the same time, enormous CPU load
 	await Promise.all([
 		// https://pokemonromhack.com/list
-		pokemonArchive1(),
+		pokemonArchive1 (),
 
 		// https://www.romhacking.net/?page=hacks
-		generalArchive1(),
+		generalArchive1 (),
 
 		// https://www.smwcentral.net/?p=section&s=smwhacks
-		smwArchive1(),
+		smwArchive1 (),
 
 		// https://www.smwcentral.net/?p=section&s=sm64hacks
-		sm64Archive1(),
+		sm64Archive1 (),
 
 		// https://www.smwcentral.net/?p=section&s=yihacks
-		yoshisIslandArchive1(),
+		yoshisIslandArchive1 (),
 
 		// https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks
-		sm64Archive2(),
+		sm64Archive2 (),
 
 		// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
-		sm64DSArchive1(),
+		sm64DSArchive1 (),
 
 		// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
-		pokemonArchive2(),
+		pokemonArchive2 (),
 
 		// https://www.smspower.org/Hacks/GameModifications
-		smspowerArchive1(),
+		smspowerArchive1 (),
 
 		// https://atariage.com/software_hacks.php?SystemID=2600
-		atari2600Archive(),
+		atari2600Archive (),
 
 		// https://gamebanana.com/projects?mid=SubmissionsList
-		gamebananaArchive("projects"),
+		gamebananaArchive ("projects"),
 
 		// https://gamebanana.com/maps?mid=SubmissionsList
-		gamebananaArchive("maps"),
+		gamebananaArchive ("maps"),
 
 		// https://gamebanana.com/skins?mid=SubmissionsList
-		gamebananaArchive("skins"),
+		gamebananaArchive ("skins"),
 
 		// https://www.moddb.com/mods
-		moddbModsArchive(),
+		moddbModsArchive (),
 
 		// https://www.moddb.com/addons
-		moddbAddonsArchive(),
+		moddbAddonsArchive (),
 
 		// http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack
-		brawlVaultArchive(),
+		brawlVaultArchive (),
 
 		// https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/
-		quakeWikiArchive(),
+		quakeWikiArchive (),
 
 		// https://www.nexusmods.com/mods/
-		nexusModsArchive(),
+		nexusModsArchive (),
 
 		// https://www.curseforge.com/minecraft/mc-mods
-		curseforgeArchive("mc-mod"),
+		curseforgeArchive ("mc-mod"),
 
 		// https://www.curseforge.com/minecraft/bukkit-plugins
-		curseforgeArchive("mc-plugin"),
+		curseforgeArchive ("mc-plugin"),
 
 		// https://www.curseforge.com/wow/addons
-		curseforgeArchive("wow"),
+		curseforgeArchive ("wow"),
 
 		// https://www.curseforge.com/sc2/assets
-		curseforgeArchive("sc2"),
+		curseforgeArchive ("sc2"),
 
 		// https://www.curseforge.com/kerbal/ksp-mods
-		curseforgeArchive("ksp"),
+		curseforgeArchive ("ksp"),
 
 		// https://www.curseforge.com/wildstar/ws-addons
-		curseforgeArchive("ws"),
+		curseforgeArchive ("ws"),
 
 		// https://www.curseforge.com/terraria/maps
-		curseforgeArchive("terraria"),
+		curseforgeArchive ("terraria"),
 
 		// https://www.curseforge.com/worldoftanks/wot-mods
-		curseforgeArchive("wot"),
+		curseforgeArchive ("wot"),
 
 		// https://www.curseforge.com/rom/addons
-		curseforgeArchive("rom"),
+		curseforgeArchive ("rom"),
 
 		// https://www.curseforge.com/rift/addons
-		curseforgeArchive("rift"),
+		curseforgeArchive ("rift"),
 
 		// https://www.curseforge.com/skyrim/mods
-		curseforgeArchive("skyrim"),
+		curseforgeArchive ("skyrim"),
 
 		// https://www.curseforge.com/tsw/tsw-mods
-		curseforgeArchive("tsw"),
+		curseforgeArchive ("tsw"),
 
 		// https://www.curseforge.com/teso/teso-addons
-		curseforgeArchive("teso"),
+		curseforgeArchive ("teso"),
 
 		// https://www.curseforge.com/stardewvalley/mods
-		curseforgeArchive("sv"),
+		curseforgeArchive ("sv"),
 
 		// https://www.curseforge.com/swlegends/tswl-mods
-		curseforgeArchive("swl"),
+		curseforgeArchive ("swl"),
 
 		// https://www.curseforge.com/chronicles-of-arcadia/addons
-		curseforgeArchive("coa"),
+		curseforgeArchive ("coa"),
 
 		// https://www.curseforge.com/darkestdungeon/dd-mods
-		curseforgeArchive("dd"),
+		curseforgeArchive ("dd"),
 
 		// https://www.curseforge.com/surviving-mars/mods
-		curseforgeArchive("sm"),
+		curseforgeArchive ("sm"),
 
 		// https://www.curseforge.com/gta5/gta-v-mods
-		curseforgeArchive("gta5"),
+		curseforgeArchive ("gta5"),
 
 		// https://www.curseforge.com/staxel/staxel-mods
-		curseforgeArchive("staxel"),
+		curseforgeArchive ("staxel"),
 
 		// http://www.wolfenvault.com/mods.html
-		wolfenVaultArchive(),
+		wolfenVaultArchive (),
 
 		// https://half-life.fandom.com/wiki/Mods
-		halfLifeWikiArchive(),
+		halfLifeWikiArchive (),
 
 		// https://www.runthinkshootlive.com/hl
-		runthinkshootliveArchive("hl"),
+		runthinkshootliveArchive ("hl"),
 
 		// https://www.runthinkshootlive.com/of
-		runthinkshootliveArchive("of"),
+		runthinkshootliveArchive ("of"),
 
 		// https://www.runthinkshootlive.com/hl2
-		runthinkshootliveArchive("hl2"),
+		runthinkshootliveArchive ("hl2"),
 
 		// https://www.runthinkshootlive.com/ep1
-		runthinkshootliveArchive("ep1"),
+		runthinkshootliveArchive ("ep1"),
 
 		// https://www.runthinkshootlive.com/ep2
-		runthinkshootliveArchive("ep2"),
+		runthinkshootliveArchive ("ep2"),
 
 		// https://www.runthinkshootlive.com/bm
-		runthinkshootliveArchive("bm"),
+		runthinkshootliveArchive ("bm"),
 
 		// https://www.gta5-mods.com/all/most-downloaded
-		gta5Archive()
+		gta5Archive ()
 	]);
 
 	await browser.close();
 
-	var additionalHacks = require("./additional.js");
-	additionalHacks.forEach(function (hack) {
-		// Correct date
-		hack.release = moment(hack.release, ["DDMMYYYY", "MMMMDDYYYY", "YYYY"]);
-	});
-	console.log("Additional Hacks Length: " + additionalHacks.length);
+	if (config.included_scrapers.includes(0)) {
+		var additionalHacks = require ("./additional.js");
+		additionalHacks.forEach(function (hack) {
+			// Correct date
+			hack.release = moment (hack.release, ["DDMMYYYY", "MMMMDDYYYY", "YYYY"]);
+		});
+		console.log("Additional Hacks Length: " + additionalHacks.length);
 
-	additionalHacks.forEach(hack => console.log(hack));
+		additionalHacks.forEach(hack => console.log(hack));
 
-	allHackEntries = additionalHacks;
+		allHackEntries = additionalHacks;
 
-	dumpCurrentData();
+		dumpCurrentData ();
+	}
 
 	csvWriter.end();
 
-	await (new Promise(res => csvWriter.on("finish", res)));
-})();
+	await (new Promise (res => csvWriter.on("finish", res)));
+}) ();

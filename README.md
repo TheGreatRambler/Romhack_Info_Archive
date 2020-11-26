@@ -2,6 +2,8 @@
 
 A script to download info from many different sites and compile a massive `csv` file containing info about romhacks and mods that could be useful to data analysis. The script is expected to take many hours, based on your internet speed and processor speed, and is completely dependent on website layout (if it updates) and whether you are rate limited. To install, either `git clone` this repo or download the source. Use a terminal in the project directory and run `npm i`. To run, find a computer you aren't using and run `node main.js`. Once done, a `database.csv` file will be created that you can then inspect and analyze.
 
+A `config.json` can be used to specify which scrapers you would like to put to use.
+
 # Included sites
 * [pokemonromhack.com](https://pokemonromhack.com/list) (key 1)
 * [romhacking.net](https://www.romhacking.net/?page=hacks) (key 2)

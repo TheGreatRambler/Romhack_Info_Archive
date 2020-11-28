@@ -1235,7 +1235,7 @@ async function curseforgeArchive (type) {
 		if (pageListContainer.length === 0) {
 			return 1;
 		} else {
-			var pagesArray = [0].children;
+			var pagesArray = pageListContainer[0].children;
 			return parseInt (pagesArray[pagesArray.length - 2].innerText);
 		}
 	});

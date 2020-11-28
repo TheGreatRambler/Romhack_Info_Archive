@@ -2,3 +2,4 @@ node_modules
 database.xlsx
 database.csv
 config.json
+config_*.json

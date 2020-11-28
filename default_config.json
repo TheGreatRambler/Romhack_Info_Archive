@@ -41,13 +41,13 @@
 		38, // 1 request
 		39, // Has no rate limiting
 		40, // Probably 40 requests per minute
-		41, // The following up to 47 has no rate limiting
+		41, // The following up to 46 has no rate limiting
 		42,
 		43,
 		44,
 		45,
 		46,
-		47
+		47 // 50422 mods + 2966 pages = 53388 requests
 	],
 	"ranges": {
 		"2": {

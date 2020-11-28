@@ -19,26 +19,26 @@
 		16,
 		17, // 25 requests per minute (archive.org limitation)
 		18, // 2500 requests a day, 13108 pages means 6 days or 6 people
-		19, // The following up to 38 have rate limiting but the amount is not known
-		20,
-		21,
-		22,
-		23,
-		24,
-		25,
-		26,
-		27,
-		28,
-		29,
-		30,
-		31,
-		32,
-		33,
-		34,
-		35,
-		36,
-		37,
-		38,
+		19, // The following up to 38 have rate limiting but the amount is not known, 1002 requests
+		20, // 897 requests
+		21, // 454 requests
+		22, // 21 requests
+		23, // 48 requests
+		24, // 45 requests
+		25, // 36 request
+		26, // 13 requests
+		27, // 15 requests
+		28, // 15 requests
+		29, // 11 requests
+		30, // 8 requesus
+		31, // 7 requests
+		32, // 3 requests
+		33, // 3 requests
+		34, // 2 requests
+		35, // 1 request
+		36, // 1 request
+		37, // 1 request
+		38, // 1 request
 		39, // Has no rate limiting
 		40, // Probably 40 requests per minute
 		41, // The following up to 47 has no rate limiting

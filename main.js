@@ -1051,6 +1051,8 @@ async function brawlVaultArchive () {
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
+
+		dumpCurrentData ();
 	}
 
 	dumpCurrentData ();
@@ -1168,6 +1170,8 @@ async function nexusModsArchive () {
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
+
+		dumpCurrentData ();
 
 		var canFlip = await mainBrowserPage.evaluate(() => {
 			var nextPage = document.getElementsByClassName("page-selected mfp-prevent-close")[0].parentElement.nextElementSibling;
@@ -1292,6 +1296,8 @@ async function curseforgeArchive (type) {
 			console.log(hack);
 			allHackEntries.push(hack);
 		});
+
+		dumpCurrentData ();
 	}
 
 	dumpCurrentData ();

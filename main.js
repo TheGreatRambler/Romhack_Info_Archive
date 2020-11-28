@@ -1080,7 +1080,7 @@ async function quakeWikiArchive () {
 			var downloadLinks = document.getElementsByClassName("download-link");
 			var downloads     = null;
 			if (downloadLinks.length !== 0) {
-				var downloadText          = [0].innerText;
+				var downloadText          = downloadLinks[0].innerText;
 				var startDownloadTextSnip = document.getElementsByClassName("download-link")[0].innerText.indexOf("(") + 1;
 				downloads                 = parseInt (downloadText.slice(startDownloadTextSnip, -1).replace(" downloads", ""));
 			}

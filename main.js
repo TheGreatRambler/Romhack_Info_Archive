@@ -1012,47 +1012,54 @@ async function brawlVaultArchive () {
 			waitUntil: "domcontentloaded",
 			timeout: 0
 		});
-
-		var tempData = await mainBrowserPage.evaluate(() => {
-			var tempData = [];
-			var hackList = document.getElementById("hackHolder").children;
-			Array.from(hackList).forEach(function (hackContainer) {
-				var authors     = [];
-				var authorIndex = 2;
-				var readAuthors = true;
-				while (readAuthors) {
-					if (hackContainer.children[authorIndex].tagName === "BR") {
-						readAuthors = false;
-					} else {
-						authors.push(hackContainer.children[authorIndex].innerText);
-						authorIndex++;
+		try {
+			var tempData = await mainBrowserPage.evaluate(() => {
+				var tempData = [];
+				var hackList = document.getElementById("hackHolder").children;
+				Array.from(hackList).forEach(function (hackContainer) {
+					var authors     = [];
+					var authorIndex = 2;
+					var readAuthors = true;
+					while (readAuthors) {
+						if (hackContainer.children[authorIndex].tagName === "BR") {
+							readAuthors = false;
+						} else {
+							authors.push(hackContainer.children[authorIndex].innerText);
+							authorIndex++;
+						}
 					}
-				}
 
-				tempData.push({
-					name: hackContainer.children[1].innerText,
-					author: authors.join(", "),
-					release: hackContainer.children[0].children[2].nextSibling.textContent.trimLeft(),
-					originalgame: "Super Smash Bros Brawl",
-					system: "Wii",
-					downloads: parseInt (hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
-					type: hackContainer.children[authors.length + 4].innerText.slice(1, -1),
-					// None have dedicated pages, redirect to master page
-					url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack",
-					source: "brawlvault"
+					tempData.push({
+						name: hackContainer.children[1].innerText,
+						author: authors.join(", "),
+						release: hackContainer.children[0].children[2].nextSibling.textContent.trimLeft(),
+						originalgame: "Super Smash Bros Brawl",
+						system: "Wii",
+						downloads: parseInt (hackContainer.children[0].children[0].nextSibling.nextSibling.innerText),
+						type: hackContainer.children[authors.length + 4].innerText.slice(1, -1),
+						// None have dedicated pages, redirect to master page
+						url: "http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack",
+						source: "brawlvault"
+					});
 				});
+
+				return tempData;
 			});
 
-			return tempData;
-		});
+			tempData.forEach(function (hack) {
+				hack.release = moment (hack.release, "MMMMDDYYYY");
+				console.log(hack);
+				allHackEntries.push(hack);
+			});
 
-		tempData.forEach(function (hack) {
-			hack.release = moment (hack.release, "MMMMDDYYYY");
-			console.log(hack);
-			allHackEntries.push(hack);
-		});
-
-		dumpCurrentData ();
+			dumpCurrentData ();
+		} catch (e) {
+			// Last ditch
+			// Some errors are just impossible to fix :)
+			console.log(pageLink);
+			console.error(e.toString());
+			console.trace();
+		}
 	}
 
 	dumpCurrentData ();
@@ -1131,47 +1138,55 @@ async function nexusModsArchive () {
 		});
 		await mainBrowserPage.waitFor(1000);
 
-		var tempData = await mainBrowserPage.evaluate(() => {
-			var tempData = [];
-			var hackList = document.getElementsByClassName("tiles")[0].children;
-			Array.from(hackList).forEach(function (hackContainer) {
-				var container = hackContainer.children[1];
+		try {
+			var tempData = await mainBrowserPage.evaluate(() => {
+				var tempData = [];
+				var hackList = document.getElementsByClassName("tiles")[0].children;
+				Array.from(hackList).forEach(function (hackContainer) {
+					var container = hackContainer.children[1];
 
-				var downloadsString = container.children[3].firstElementChild.children[2].innerText;
-				var downloadNumber;
-				if (downloadsString === "--") {
-					downloadNumber = 0;
-				} else if (downloadsString.endsWith("k")) {
-					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
-				} else if (downloadsString.endsWith("M")) {
-					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
-				} else {
-					downloadNumber = parseInt (downloadsString);
-				}
+					var downloadsString = container.children[3].firstElementChild.children[2].innerText;
+					var downloadNumber;
+					if (downloadsString === "--") {
+						downloadNumber = 0;
+					} else if (downloadsString.endsWith("k")) {
+						downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
+					} else if (downloadsString.endsWith("M")) {
+						downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
+					} else {
+						downloadNumber = parseInt (downloadsString);
+					}
 
-				tempData.push({
-					name: container.children[2].children[1].children[0].innerText,
-					author: container.children[2].children[1].children[1].children[3].innerText.replace("Author: ", ""),
-					release: container.children[2].children[1].children[1].children[1].dateTime,
-					originalgame: container.children[2].children[1].children[1].children[0].children[0].innerText,
-					system: "PC",
-					downloads: downloadNumber,
-					type: container.children[2].children[1].children[1].children[0].children[1].innerText,
-					url: container.children[2].children[1].children[0].firstChild.href,
-					source: "nexusmods"
+					tempData.push({
+						name: container.children[2].children[1].children[0].innerText,
+						author: container.children[2].children[1].children[1].children[3].innerText.replace("Author: ", ""),
+						release: container.children[2].children[1].children[1].children[1].dateTime,
+						originalgame: container.children[2].children[1].children[1].children[0].children[0].innerText,
+						system: "PC",
+						downloads: downloadNumber,
+						type: container.children[2].children[1].children[1].children[0].children[1].innerText,
+						url: container.children[2].children[1].children[0].firstChild.href,
+						source: "nexusmods"
+					});
 				});
+
+				return tempData;
 			});
 
-			return tempData;
-		});
+			tempData.forEach(function (hack) {
+				hack.release = moment (hack.release, "YYYYMMDD HHSS");
+				console.log(hack);
+				allHackEntries.push(hack);
+			});
 
-		tempData.forEach(function (hack) {
-			hack.release = moment (hack.release, "YYYYMMDD HHSS");
-			console.log(hack);
-			allHackEntries.push(hack);
-		});
-
-		dumpCurrentData ();
+			dumpCurrentData ();
+		} catch (e) {
+			// Last ditch
+			// Some errors are just impossible to fix :)
+			console.log(pageLink);
+			console.error(e.toString());
+			console.trace();
+		}
 
 		var canFlip = await mainBrowserPage.evaluate(() => {
 			var nextPage = document.getElementsByClassName("page-selected mfp-prevent-close")[0].parentElement.nextElementSibling;
@@ -1255,47 +1270,55 @@ async function curseforgeArchive (type) {
 			timeout: 0
 		});
 
-		var tempData = await mainBrowserPage.evaluate(() => {
-			var tempData = [];
-			var hackList = document.getElementsByClassName("my-4")[0].previousElementSibling.firstElementChild.children;
-			Array.from(hackList).forEach(function (hackContainer) {
-				var container = hackContainer.firstElementChild;
+		try {
+			var tempData = await mainBrowserPage.evaluate(() => {
+				var tempData = [];
+				var hackList = document.getElementsByClassName("my-4")[0].previousElementSibling.firstElementChild.children;
+				Array.from(hackList).forEach(function (hackContainer) {
+					var container = hackContainer.firstElementChild;
 
-				var downloadsString = container.children[1].children[1].children[0].innerText.replace(" Downloads", "");
-				var downloadNumber;
-				if (downloadsString.endsWith("K")) {
-					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
-				} else if (downloadsString.endsWith("M")) {
-					downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
-				} else {
-					downloadNumber = parseInt (downloadsString);
-				}
+					var downloadsString = container.children[1].children[1].children[0].innerText.replace(" Downloads", "");
+					var downloadNumber;
+					if (downloadsString.endsWith("K")) {
+						downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000;
+					} else if (downloadsString.endsWith("M")) {
+						downloadNumber = parseFloat (downloadsString.slice(0, -1)) * 1000000;
+					} else {
+						downloadNumber = parseInt (downloadsString);
+					}
 
-				var types = Array.from(container.children[2].children[1].children).map(function (typeImage) {
-					return typeImage.firstElementChild.firstElementChild.title;
+					var types = Array.from(container.children[2].children[1].children).map(function (typeImage) {
+						return typeImage.firstElementChild.firstElementChild.title;
+					});
+
+					tempData.push({
+						name: container.children[0].children[1].children[0].innerText,
+						author: container.children[0].children[1].children[2].innerText,
+						release: container.children[1].children[1].children[2].innerText.replace("Created ", ""),
+						downloads: downloadNumber,
+						type: types.join(", "),
+						url: container.children[0].children[1].children[0].href,
+						source: "curseforge"
+					});
 				});
 
-				tempData.push({
-					name: container.children[0].children[1].children[0].innerText,
-					author: container.children[0].children[1].children[2].innerText,
-					release: container.children[1].children[1].children[2].innerText.replace("Created ", ""),
-					downloads: downloadNumber,
-					type: types.join(", "),
-					url: container.children[0].children[1].children[0].href,
-					source: "curseforge"
-				});
+				return tempData;
 			});
 
-			return tempData;
-		});
-
-		tempData.forEach(function (hack) {
-			hack.release      = moment (hack.release, "MMMMDDYYYY");
-			hack.originalgame = game;
-			hack.system       = system;
-			console.log(hack);
-			allHackEntries.push(hack);
-		});
+			tempData.forEach(function (hack) {
+				hack.release      = moment (hack.release, "MMMMDDYYYY");
+				hack.originalgame = game;
+				hack.system       = system;
+				console.log(hack);
+				allHackEntries.push(hack);
+			});
+		} catch (e) {
+			// Last ditch
+			// Some errors are just impossible to fix :)
+			console.log(pageLink);
+			console.error(e.toString());
+			console.trace();
+		}
 
 		dumpCurrentData ();
 	}
@@ -1345,50 +1368,60 @@ async function wolfenVaultArchive () {
 			timeout: 0
 		});
 
-		var tempData = await mainBrowserPage.evaluate(() => {
-			var tempData = [];
-			var hackList = Array.from(document.querySelectorAll(".auto-style26, .auto-style25, .auto-style32")).filter(item => !!item.firstElementChild)[0].firstElementChild.children;
-			Array.from(hackList).forEach(function (hackContainer, index) {
-				if (index === 0) {
-					return
-				}
+		try {
+			var tempData = await mainBrowserPage.evaluate(() => {
+				var tempData = [];
+				var hackList = Array.from(document.querySelectorAll(".auto-style26, .auto-style25, .auto-style32")).filter(item => !!item.firstElementChild)[0].firstElementChild.children;
+				Array.from(hackList).forEach(function (hackContainer, index) {
+					if (index === 0) {
+						return
+					}
 
-				var offset = !hackContainer.children[0].innerText.trim() ? 1 : 0;
+					var offset = !hackContainer.children[0].innerText.trim() ? 1 : 0;
 
-				tempData.push({
-					name: hackContainer.children[0 + offset].innerText,
-					author: hackContainer.children[1 + offset].innerText,
-					release: hackContainer.children[2 + offset].innerText,
-					downloads: null,
-					type: hackContainer.children[3 + offset].innerText + ", " + hackContainer.children[4 + offset].innerText + " levels",
-					source: "wolfen vault"
+					tempData.push({
+						name: hackContainer.children[0 + offset].innerText,
+						author: hackContainer.children[1 + offset].innerText,
+						release: hackContainer.children[2 + offset].innerText,
+						downloads: null,
+						type: hackContainer.children[3 + offset].innerText + ", " + hackContainer.children[4 + offset].innerText + " levels",
+						source: "wolfen vault"
+					});
 				});
+
+				return tempData;
 			});
 
-			return tempData;
-		});
+			var gameName;
+			if (link.includes("tcs")) {
+				gameName = "Wolfenstein 3D";
+			} else if (link.includes("reg")) {
+				gameName = "Wolfenstein 3D";
+			} else if (link.includes("sod")) {
+				gameName = "Spear of Destiny";
+			} else if (link.includes("shw")) {
+				gameName = "Shareware Wolfenstein 3D";
+			}
 
-		var gameName;
-		if (link.includes("tcs")) {
-			gameName = "Wolfenstein 3D";
-		} else if (link.includes("reg")) {
-			gameName = "Wolfenstein 3D";
-		} else if (link.includes("sod")) {
-			gameName = "Spear of Destiny";
-		} else if (link.includes("shw")) {
-			gameName = "Shareware Wolfenstein 3D";
+			tempData.forEach(function (hack) {
+				hack.release      = moment (hack.release, "MMDDYY");
+				hack.originalgame = gameName;
+				hack.system       = "PC";
+				hack.url          = link;
+				if (link.includes("tcs"))
+					hack.type += ", Modified EXE";
+				console.log(hack);
+				allHackEntries.push(hack);
+			});
+		} catch (e) {
+			// Last ditch
+			// Some errors are just impossible to fix :)
+			console.log(pageLink);
+			console.error(e.toString());
+			console.trace();
 		}
 
-		tempData.forEach(function (hack) {
-			hack.release      = moment (hack.release, "MMDDYY");
-			hack.originalgame = gameName;
-			hack.system       = "PC";
-			hack.url          = link;
-			if (link.includes("tcs"))
-				hack.type += ", Modified EXE";
-			console.log(hack);
-			allHackEntries.push(hack);
-		});
+		dumpCurrentData ();
 	}
 
 	dumpCurrentData ();
@@ -1478,39 +1511,47 @@ async function runthinkshootliveArchive (type) {
 	});
 
 	for (let page = 1; page <= lastPage; page++) {
-		var tempData = await mainBrowserPage.evaluate(() => {
-			var tempData = [];
-			var hackList = document.getElementsByClassName("display dataTable")[0].children[2].children;
-			Array.from(hackList).forEach(function (hackContainer) {
-				var date = hackContainer.children[3].innerText;
-				if (date === "01 Jan 1998") {
-					// Impossible guess, the game wasn't released by then
-				} else if (date === "08 Nov 0215") {
-					// Somebody mistyped
-					date = "08 Nov 2015";
-				}
+		try {
+			var tempData = await mainBrowserPage.evaluate(() => {
+				var tempData = [];
+				var hackList = document.getElementsByClassName("display dataTable")[0].children[2].children;
+				Array.from(hackList).forEach(function (hackContainer) {
+					var date = hackContainer.children[3].innerText;
+					if (date === "01 Jan 1998") {
+						// Impossible guess, the game wasn't released by then
+					} else if (date === "08 Nov 0215") {
+						// Somebody mistyped
+						date = "08 Nov 2015";
+					}
 
-				tempData.push({
-					name: hackContainer.children[0].innerText,
-					author: hackContainer.children[4].innerText,
-					release: date,
-					downloads: parseInt (hackContainer.children[5].innerText),
-					type: hackContainer.children[10].innerText + ", " + hackContainer.children[11].innerText + ", " + hackContainer.children[12].innerText,
-					url: hackContainer.children[0].firstElementChild.href,
-					source: "runthinkshootlive"
+					tempData.push({
+						name: hackContainer.children[0].innerText,
+						author: hackContainer.children[4].innerText,
+						release: date,
+						downloads: parseInt (hackContainer.children[5].innerText),
+						type: hackContainer.children[10].innerText + ", " + hackContainer.children[11].innerText + ", " + hackContainer.children[12].innerText,
+						url: hackContainer.children[0].firstElementChild.href,
+						source: "runthinkshootlive"
+					});
 				});
+
+				return tempData;
 			});
 
-			return tempData;
-		});
-
-		tempData.forEach(function (hack) {
-			hack.release      = moment (hack.release, "DDMMMMYYYY");
-			hack.originalgame = game;
-			hack.system       = system;
-			console.log(hack);
-			allHackEntries.push(hack);
-		});
+			tempData.forEach(function (hack) {
+				hack.release      = moment (hack.release, "DDMMMMYYYY");
+				hack.originalgame = game;
+				hack.system       = system;
+				console.log(hack);
+				allHackEntries.push(hack);
+			});
+		} catch (e) {
+			// Last ditch
+			// Some errors are just impossible to fix :)
+			console.log(pageLink);
+			console.error(e.toString());
+			console.trace();
+		}
 
 		if (page != lastPage) {
 			await mainBrowserPage.click(".next");

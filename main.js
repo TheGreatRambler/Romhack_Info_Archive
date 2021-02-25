@@ -1660,7 +1660,8 @@ function dumpCurrentData() {
 	var name = "database.csv";
 
 	browser = await puppeteer.launch({
-		headless: true
+		headless: true,
+		args: ["--no-sandbox"]
 	});
 
 	console.log("Browser opened");

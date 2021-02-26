@@ -44,24 +44,42 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 			var ret = (async function (page, index) {
 				var linkHere = links[i + index];
 				if (linkHere) {
-					var json;
-					if (type === "html") {
-						await page.goto(linkHere, {
-							waitUntil: "domcontentloaded",
-							timeout: 0
-						});
-					} else if (type === "json") {
-						json = await axios.get(linkHere);
-					}
-
-					var hackEntry;
-
 					try {
+						var json;
+						if (type === "html") {
+							await page.goto(linkHere, {
+								waitUntil: "domcontentloaded",
+								timeout: 0
+							});
+						} else if (type === "json") {
+							json = await axios.get(linkHere);
+						}
+
+						var hackEntry;
 						if (type === "html") {
 							hackEntry = await pageCallback (page, linkHere);
 						} else if (type === "json") {
 							hackEntry = await pageCallback (json.data, linkHere);
 						}
+
+						if (hackEntry) {
+							if (type === "html") {
+								hackEntry.url = linkHere;
+							}
+
+							// Handle date
+							// Sometimes the release isn't defined
+							if (hackEntry.release) {
+								hackEntry.release = moment (hackEntry.release, dateFormat);
+								if (!hackEntry.release.isValid())
+									hackEntry.release = null;
+							}
+
+							console.log(hackEntry);
+
+							allHackEntries.push(hackEntry);
+						}
+
 					} catch (e) {
 						// Last ditch
 						// Some errors are just impossible to fix :)
@@ -69,24 +87,6 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 						console.error(e.toString());
 						console.trace();
 						return;
-					}
-
-					if (hackEntry) {
-						if (type === "html") {
-							hackEntry.url = linkHere;
-						}
-
-						// Handle date
-						// Sometimes the release isn't defined
-						if (hackEntry.release) {
-							hackEntry.release = moment (hackEntry.release, dateFormat);
-							if (!hackEntry.release.isValid())
-								hackEntry.release = null;
-						}
-
-						console.log(hackEntry);
-
-						allHackEntries.push(hackEntry);
 					}
 				}
 			}) (page, index);
@@ -1934,6 +1934,7 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
+		
 		await promises[i];
 	}
 

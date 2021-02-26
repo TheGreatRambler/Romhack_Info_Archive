@@ -1706,7 +1706,21 @@ function dumpCurrentData () {
 
 	browser = await puppeteer.launch({
 		headless: true,
-		args: ["--no-sandbox"]
+		args: [
+			"—-timeout=300000", // 5 minute timeout LUL
+			"--headless",
+			"--no-sandbox",
+			"--ignore-certificate-errors",
+			"--no-sandbox",
+			"--disable-setuid-sandbox",
+			"--disable-accelerated-2d-canvas",
+			"--disable-gp",
+			"--disable-dev-shm-usage",
+			"--no-first-run",
+			"--no-zygote",
+			"--single-process", // <- this one doesn't works on Windows
+			"--disable-gpu"
+		]
 	});
 
 	console.log("Browser opened");

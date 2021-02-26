@@ -5,3 +5,4 @@ config.json
 config_*.json
 output.txt
 package-lock.json
+run.sh

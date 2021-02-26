@@ -1730,10 +1730,11 @@ function dumpCurrentData () {
 
 	csvWriter.write("Name,Author,Release,Release (UNIX Timestamp),Original Game,System,Downloads,Type,Important,Url,Source\n");
 
+	var promises = [];
 	// All pages are scraped at exactly the same time, enormous CPU load
 	// Will make your computer unusuable
 	// clang-format off
-	var promises = [
+	promises = [
 		// https://pokemonromhack.com/list
 		pokemonArchive1(),
 
@@ -1753,8 +1754,17 @@ function dumpCurrentData () {
 		sm64Archive2(),
 
 		// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
-		sm64DSArchive1(),
+		sm64DSArchive1()
+	];
 
+	for (var i = 0; i < promises.length; i++) {
+		await promises[i];
+	}
+
+	// Reset
+	promises.length = 0;
+
+	var promises = [
 		// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
 		pokemonArchive2(),
 
@@ -1774,8 +1784,19 @@ function dumpCurrentData () {
 		gamebananaArchive("skins"),
 
 		// https://www.moddb.com/mods
-		moddbModsArchive(),
+		moddbModsArchive()
 
+		
+	];
+
+	for (var i = 0; i < promises.length; i++) {
+		await promises[i];
+	}
+
+	// Reset
+	promises.length = 0;
+
+	promises = [
 		// https://www.moddb.com/addons
 		moddbAddonsArchive(),
 
@@ -1795,8 +1816,17 @@ function dumpCurrentData () {
 		curseforgeArchive("mc-plugin"),
 
 		// https://www.curseforge.com/wow/addons
-		curseforgeArchive("wow"),
+		curseforgeArchive("wow")
+	];
 
+	for (var i = 0; i < promises.length; i++) {
+		await promises[i];
+	}
+
+	// Reset
+	promises.length = 0;
+
+	promises = [
 		// https://www.curseforge.com/sc2/assets
 		curseforgeArchive("sc2"),
 
@@ -1816,8 +1846,17 @@ function dumpCurrentData () {
 		curseforgeArchive("rom"),
 
 		// https://www.curseforge.com/rift/addons
-		curseforgeArchive("rift"),
+		curseforgeArchive("rift")
+	];
 
+	for (var i = 0; i < promises.length; i++) {
+		await promises[i];
+	}
+
+	// Reset
+	promises.length = 0;
+
+	promises = [
 		// https://www.curseforge.com/skyrim/mods
 		curseforgeArchive("skyrim"),
 
@@ -1837,8 +1876,17 @@ function dumpCurrentData () {
 		curseforgeArchive("coa"),
 
 		// https://www.curseforge.com/darkestdungeon/dd-mods
-		curseforgeArchive("dd"),
+		curseforgeArchive("dd")
+	];
 
+	for (var i = 0; i < promises.length; i++) {
+		await promises[i];
+	}
+
+	// Reset
+	promises.length = 0;
+
+	promises = [
 		// https://www.curseforge.com/surviving-mars/mods
 		curseforgeArchive("sm"),
 
@@ -1858,8 +1906,17 @@ function dumpCurrentData () {
 		runthinkshootliveArchive("hl"),
 
 		// https://www.runthinkshootlive.com/of
-		runthinkshootliveArchive("of"),
+		runthinkshootliveArchive("of")
+	];
 
+	for (var i = 0; i < promises.length; i++) {
+		await promises[i];
+	}
+
+	// Reset
+	promises.length = 0;
+
+	promises = [
 		// https://www.runthinkshootlive.com/hl2
 		runthinkshootliveArchive("hl2"),
 
@@ -1879,6 +1936,9 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		await promises[i];
 	}
+
+	// Reset
+	promises.length = 0;
 	// clang-format on
 
 	await browser.close();

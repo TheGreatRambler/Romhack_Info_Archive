@@ -49,7 +49,7 @@ async function handleWebpageTemplate (links, pageCallback, type, dateFormat) {
 						if (type === "html") {
 							await page.goto(linkHere, {
 								waitUntil: "domcontentloaded",
-								timeout: 0
+								timeout: 300000
 							});
 						} else if (type === "json") {
 							json = await axios.get(linkHere);
@@ -115,7 +115,7 @@ async function pokemonArchive1 () {
 
 	await mainBrowserPage.goto("https://pokemonromhack.com/list", {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -160,7 +160,7 @@ async function generalArchive1 () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.romhacking.net/?page=hacks&perpage=200&startpage=" + start, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -226,7 +226,7 @@ async function smwArchive1 () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=smwhacks&n=" + start, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -296,7 +296,7 @@ async function sm64Archive1 () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=sm64hacks&n=" + start, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -365,7 +365,7 @@ async function yoshisIslandArchive1 () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.smwcentral.net/?p=section&s=yihacks&n=" + start, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -430,7 +430,7 @@ async function sm64Archive2 () {
 
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks", {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -506,7 +506,7 @@ async function sm64DSArchive1 () {
 
 	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -566,7 +566,7 @@ async function pokemonArchive2 () {
 
 	await mainBrowserPage.goto("https://www.gbahacks.com/p/pokemon-rom-hack-list.html", {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -671,7 +671,7 @@ async function smspowerArchive1 () {
 
 	await mainBrowserPage.goto("https://www.smspower.org/Hacks/GameModifications", {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -727,7 +727,7 @@ async function atari2600Archive () {
 	while (true) {
 		await mainBrowserPage.goto("https://atariage.com/software_hacks.php?SystemID=2600&currentPage=" + (start - 1), {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -857,7 +857,7 @@ async function moddbModsArchive () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.moddb.com/mods/page/" + start + "#modsbrowse", {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -921,7 +921,7 @@ async function moddbModsArchive () {
 
 		await page.goto(link + "/downloads", {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		part.downloads = await page.evaluate(() => {
@@ -946,7 +946,7 @@ async function moddbAddonsArchive () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.moddb.com/addons/page/" + start + "#addonsbrowse", {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -1006,7 +1006,7 @@ async function moddbAddonsArchive () {
 
 		await page.goto(link + "/downloads", {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		part.downloads = await page.evaluate(() => {
@@ -1026,7 +1026,7 @@ async function brawlVaultArchive () {
 
 	await mainBrowserPage.goto("http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack", {
 		waitUntil: "networkidle2",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var lastPage = await mainBrowserPage.evaluate(() => {
@@ -1042,7 +1042,7 @@ async function brawlVaultArchive () {
 		console.log(pageLink);
 		await mainBrowserPage.goto(pageLink, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 		try {
 			var tempData = await mainBrowserPage.evaluate(() => {
@@ -1108,7 +1108,7 @@ async function quakeWikiArchive () {
 
 	await mainBrowserPage.goto("https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/", {
 		waitUntil: "networkidle2",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -1158,7 +1158,7 @@ async function nexusModsArchive () {
 	console.log(link);
 	await mainBrowserPage.goto(link, {
 		waitUntil: "networkidle2",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var start = config.ranges[18].start_page;
@@ -1286,7 +1286,7 @@ async function curseforgeArchive (type) {
 
 	await mainBrowserPage.goto(urlBase, {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var lastPage = await mainBrowserPage.evaluate(() => {
@@ -1307,7 +1307,7 @@ async function curseforgeArchive (type) {
 		console.log(pageLink);
 		await mainBrowserPage.goto(pageLink, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		try {
@@ -1377,7 +1377,7 @@ async function wolfenVaultArchive () {
 
 	await mainBrowserPage.goto("http://www.wolfenvault.com/mods.html", {
 		waitUntil: "networkidle2",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -1408,7 +1408,7 @@ async function wolfenVaultArchive () {
 		console.log(link);
 		await mainBrowserPage.goto(link, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		try {
@@ -1481,7 +1481,7 @@ async function halfLifeWikiArchive () {
 
 	await mainBrowserPage.goto("https://half-life.fandom.com/wiki/Mods", {
 		waitUntil: "domcontentloaded",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = await mainBrowserPage.evaluate(() => {
@@ -1546,7 +1546,7 @@ async function runthinkshootliveArchive (type) {
 
 	await mainBrowserPage.goto(urlBase, {
 		waitUntil: "networkidle2",
-		timeout: 0
+		timeout: 300000
 	});
 
 	await mainBrowserPage.waitFor(200);
@@ -1624,7 +1624,7 @@ async function gta5Archive () {
 
 	await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded", {
 		waitUntil: "networkidle2",
-		timeout: 0
+		timeout: 300000
 	});
 
 	var links = [];
@@ -1634,7 +1634,7 @@ async function gta5Archive () {
 	while (true) {
 		await mainBrowserPage.goto("https://www.gta5-mods.com/all/most-downloaded/" + start, {
 			waitUntil: "domcontentloaded",
-			timeout: 0
+			timeout: 300000
 		});
 
 		var partialLinks = await mainBrowserPage.evaluate(() => {
@@ -1758,7 +1758,12 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset
@@ -1786,11 +1791,16 @@ function dumpCurrentData () {
 		// https://www.moddb.com/mods
 		moddbModsArchive()
 
-		
+
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset
@@ -1820,7 +1830,12 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset
@@ -1850,7 +1865,12 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset
@@ -1880,7 +1900,12 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset
@@ -1910,7 +1935,12 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset
@@ -1934,8 +1964,12 @@ function dumpCurrentData () {
 	];
 
 	for (var i = 0; i < promises.length; i++) {
-		
-		await promises[i];
+		try {
+			await promises[i];
+		} catch (e) {
+			console.error(e);
+			console.trace();
+		}
 	}
 
 	// Reset

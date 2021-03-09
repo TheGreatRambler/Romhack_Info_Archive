@@ -145,6 +145,8 @@ async function pokemonArchive1 () {
 			}
 		});
 	}, "html", "YYYY");
+
+	console.log("Done pokemonArchive1");
 };
 
 async function generalArchive1 () {
@@ -211,6 +213,8 @@ async function generalArchive1 () {
 			return temp;
 		});
 	}, "html", "DDMMMMY");
+
+	console.log("Done generalArchive1");
 }
 
 async function smwArchive1 () {
@@ -281,6 +285,8 @@ async function smwArchive1 () {
 			return temp;
 		});
 	}, "html", "YYYYMMDD");
+
+	console.log("Done smwArchive1");
 }
 
 async function sm64Archive1 () {
@@ -350,6 +356,8 @@ async function sm64Archive1 () {
 			return temp;
 		});
 	}, "html", "YYYYMMDD");
+
+	console.log("Done sm64Archive1");
 }
 
 async function yoshisIslandArchive1 () {
@@ -420,6 +428,8 @@ async function yoshisIslandArchive1 () {
 			return temp;
 		});
 	}, "html", "YYYYMMDD");
+
+	console.log("Done yoshisIslandArchive1");
 }
 
 async function sm64Archive2 () {
@@ -496,6 +506,8 @@ async function sm64Archive2 () {
 			return undefined;
 		}
 	}, "html", ["MMMMDDYYYY", "DDMMMMYYYY"]);
+
+	console.log("Done sm64Archive2");
 };
 
 async function sm64DSArchive1 () {
@@ -556,6 +568,8 @@ async function sm64DSArchive1 () {
 			return undefined;
 		}
 	}, "html", ["MMMMDDYYYY", "DDMMMMYYYY"]);
+
+	console.log("Done sm64DSArchive1");
 };
 
 async function pokemonArchive2 () {
@@ -661,6 +675,8 @@ async function pokemonArchive2 () {
 
 		return hackEntry;
 	}, "html", ["MMMMDDYYYY", "DDMMMMYYYY"]);
+
+	console.log("Done pokemonArchive2");
 };
 
 async function smspowerArchive1 () {
@@ -706,6 +722,8 @@ async function smspowerArchive1 () {
 			}
 		});
 	}, "html", ["YYYY", "DDMMMMYYYY"]);
+
+	console.log("Done smspowerArchive1");
 };
 
 async function atari2600Archive () {
@@ -778,6 +796,8 @@ async function atari2600Archive () {
 			return temp;
 		});
 	}, "html", "YYYY");
+
+	console.log("Done atari2600Archive");
 }
 
 async function gamebananaArchive (category) {
@@ -842,6 +862,8 @@ async function gamebananaArchive (category) {
 			return undefined;
 		}
 	}, "json", "YYYYMMDD");
+
+	console.log("Done gamebananaArchive(" + category + ")");
 }
 
 async function moddbModsArchive () {
@@ -931,6 +953,8 @@ async function moddbModsArchive () {
 
 		return part;
 	}, "html", "MMMMDDYYYY");
+
+	console.log("Done moddbModsArchive");
 }
 
 async function moddbAddonsArchive () {
@@ -1016,6 +1040,8 @@ async function moddbAddonsArchive () {
 
 		return part;
 	}, "html", ["YYYY", "MMMMYYYY", "MMMMDDYYYY"]);
+
+	console.log("Done moddbAddonsArchive");
 }
 
 async function brawlVaultArchive () {
@@ -1098,6 +1124,8 @@ async function brawlVaultArchive () {
 	}
 
 	dumpCurrentData ();
+
+	console.log("Done brawlVaultArchive");
 }
 
 async function quakeWikiArchive () {
@@ -1146,6 +1174,8 @@ async function quakeWikiArchive () {
 		temp.url = link;
 		return temp;
 	}, "html", "YYYYMMDD");
+
+	console.log("Done quakeWikiArchive");
 }
 
 async function nexusModsArchive () {
@@ -1242,6 +1272,8 @@ async function nexusModsArchive () {
 	}
 
 	dumpCurrentData ();
+
+	console.log("Done nexusModsArchive");
 }
 
 async function curseforgeArchive (type) {
@@ -1367,6 +1399,8 @@ async function curseforgeArchive (type) {
 	}
 
 	dumpCurrentData ();
+
+	console.log("Done curseforgeArchive(" + type + ")");
 }
 
 async function wolfenVaultArchive () {
@@ -1471,6 +1505,8 @@ async function wolfenVaultArchive () {
 	}
 
 	dumpCurrentData ();
+
+	console.log("Done wolfenVaultArchive");
 }
 
 async function halfLifeWikiArchive () {
@@ -1511,6 +1547,8 @@ async function halfLifeWikiArchive () {
 		temp.url = link;
 		return temp;
 	}, "html", "MMMMYYYY");
+
+	console.log("Done halfLifeWikiArchive");
 }
 
 async function runthinkshootliveArchive (type) {
@@ -1608,6 +1646,8 @@ async function runthinkshootliveArchive (type) {
 	}
 
 	dumpCurrentData ();
+
+	console.log("Done runthinkshootliveArchive");
 }
 
 async function gta5Archive () {
@@ -1678,6 +1718,8 @@ async function gta5Archive () {
 		part.url = link;
 		return part;
 	}, "html", "MMMMDDYYYY");
+
+	console.log("Done gta5Archive");
 }
 
 function dumpCurrentData () {
@@ -1760,6 +1802,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();
@@ -1797,6 +1840,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();
@@ -1832,6 +1876,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();
@@ -1867,6 +1912,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();
@@ -1902,6 +1948,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();
@@ -1937,6 +1984,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();
@@ -1966,6 +2014,7 @@ function dumpCurrentData () {
 	for (var i = 0; i < promises.length; i++) {
 		try {
 			await promises[i];
+			console.log("Completed subsection " + i);
 		} catch (e) {
 			console.error(e);
 			console.trace();

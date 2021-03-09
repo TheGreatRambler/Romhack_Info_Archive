@@ -4,6 +4,7 @@ const moment        = require ("moment");
 const puppeteer     = require ("puppeteer-extra");
 const StealthPlugin = require ("puppeteer-extra-plugin-stealth");
 const CommentJSON   = require ("comment-json");
+const isPi = require("detect-rpi");
 puppeteer.use(StealthPlugin ());
 
 var config = {};
@@ -1748,6 +1749,8 @@ function dumpCurrentData () {
 
 	browser = await puppeteer.launch({
 		headless: true,
+		// https://github.com/puppeteer/puppeteer/issues/550#issuecomment-635718872
+		executablePath: isPi() ? "chromium-browser" : undefined,
 		args: [
 			"—-timeout=300000", // 5 minute timeout LUL
 			"--headless",

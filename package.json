@@ -13,6 +13,7 @@
 	"dependencies": {
 		"axios": "^0.19.2",
 		"comment-json": "^4.1.0",
+		"detect-rpi": "^1.4.0",
 		"moment": "^2.29.1",
 		"node-excel-stream": "^1.2.1",
 		"node-html-parser": "^2.0.0",

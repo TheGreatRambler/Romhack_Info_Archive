@@ -4,7 +4,7 @@ const moment        = require ("moment");
 const puppeteer     = require ("puppeteer-extra");
 const StealthPlugin = require ("puppeteer-extra-plugin-stealth");
 const CommentJSON   = require ("comment-json");
-const isPi = require("detect-rpi");
+const isPi          = require ("detect-rpi");
 puppeteer.use(StealthPlugin ());
 
 var config = {};
@@ -1750,7 +1750,7 @@ function dumpCurrentData () {
 	browser = await puppeteer.launch({
 		headless: true,
 		// https://github.com/puppeteer/puppeteer/issues/550#issuecomment-635718872
-		executablePath: isPi() ? "chromium-browser" : undefined,
+		executablePath: isPi () ? "chromium-browser" : undefined,
 		args: [
 			"—-timeout=300000", // 5 minute timeout LUL
 			"--headless",
@@ -1775,258 +1775,146 @@ function dumpCurrentData () {
 
 	csvWriter.write("Name,Author,Release,Release (UNIX Timestamp),Original Game,System,Downloads,Type,Important,Url,Source\n");
 
-	var promises = [];
-	// All pages are scraped at exactly the same time, enormous CPU load
-	// Will make your computer unusuable
-	// clang-format off
-	promises = [
-		// https://pokemonromhack.com/list
-		pokemonArchive1(),
+	// https://pokemonromhack.com/list
+	await pokemonArchive1 ();
 
-		// https://www.romhacking.net/?page=hacks
-		generalArchive1(),
+	// https://www.romhacking.net/?page=hacks
+	await generalArchive1 ();
 
-		// https://www.smwcentral.net/?p=section&s=smwhacks
-		smwArchive1(),
+	// https://www.smwcentral.net/?p=section&s=smwhacks
+	await smwArchive1 ();
 
-		// https://www.smwcentral.net/?p=section&s=sm64hacks
-		sm64Archive1(),
+	// https://www.smwcentral.net/?p=section&s=sm64hacks
+	await sm64Archive1 ();
 
-		// https://www.smwcentral.net/?p=section&s=yihacks
-		yoshisIslandArchive1(),
+	// https://www.smwcentral.net/?p=section&s=yihacks
+	await yoshisIslandArchive1 ();
 
-		// https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks
-		sm64Archive2(),
+	// https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks
+	await sm64Archive2 ();
 
-		// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
-		sm64DSArchive1()
-	];
+	// https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks
+	await sm64DSArchive1 ();
 
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
+	// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
+	await pokemonArchive2 ();
 
-	// Reset
-	promises.length = 0;
+	// https://www.smspower.org/Hacks/GameModifications
+	await smspowerArchive1 ();
 
-	var promises = [
-		// ttps://www.gbahacks.com/p/pokemon-rom-hack-list.html
-		pokemonArchive2(),
+	// https://atariage.com/software_hacks.php?SystemID=2600
+	await atari2600Archive ();
 
-		// https://www.smspower.org/Hacks/GameModifications
-		smspowerArchive1(),
+	// https://gamebanana.com/projects?mid=SubmissionsList
+	await gamebananaArchive ("projects");
 
-		// https://atariage.com/software_hacks.php?SystemID=2600
-		atari2600Archive(),
+	// https://gamebanana.com/maps?mid=SubmissionsList
+	await gamebananaArchive ("maps");
 
-		// https://gamebanana.com/projects?mid=SubmissionsList
-		gamebananaArchive("projects"),
+	// https://gamebanana.com/skins?mid=SubmissionsList
+	await gamebananaArchive ("skins");
 
-		// https://gamebanana.com/maps?mid=SubmissionsList
-		gamebananaArchive("maps"),
+	// https://www.moddb.com/mods
+	await moddbModsArchive ();
 
-		// https://gamebanana.com/skins?mid=SubmissionsList
-		gamebananaArchive("skins"),
+	// https://www.moddb.com/addons
+	await moddbAddonsArchive ();
 
-		// https://www.moddb.com/mods
-		moddbModsArchive()
+	// http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack
+	await brawlVaultArchive ();
 
+	// https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/
+	await quakeWikiArchive ();
 
-	];
+	// https://www.nexusmods.com/mods/
+	await nexusModsArchive ();
 
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
+	// https://www.curseforge.com/minecraft/mc-mods
+	await curseforgeArchive ("mc-mod");
 
-	// Reset
-	promises.length = 0;
+	// https://www.curseforge.com/minecraft/bukkit-plugins
+	await curseforgeArchive ("mc-plugin");
 
-	promises = [
-		// https://www.moddb.com/addons
-		moddbAddonsArchive(),
+	// https://www.curseforge.com/wow/addons
+	await curseforgeArchive ("wow");
 
-		// http://forums.kc-mm.com/Gallery/BrawlView.php?MainType=Pack
-		brawlVaultArchive(),
+	// https://www.curseforge.com/sc2/assets
+	await curseforgeArchive ("sc2");
 
-		// https://web.archive.org/web/20200804200521/https://www.quakewiki.net/quake-1/mods/
-		quakeWikiArchive(),
+	// https://www.curseforge.com/kerbal/ksp-mods
+	await curseforgeArchive ("ksp");
 
-		// https://www.nexusmods.com/mods/
-		nexusModsArchive(),
+	// https://www.curseforge.com/wildstar/ws-addons
+	await curseforgeArchive ("ws");
 
-		// https://www.curseforge.com/minecraft/mc-mods
-		curseforgeArchive("mc-mod"),
+	// https://www.curseforge.com/terraria/maps
+	await curseforgeArchive ("terraria");
 
-		// https://www.curseforge.com/minecraft/bukkit-plugins
-		curseforgeArchive("mc-plugin"),
+	// https://www.curseforge.com/worldoftanks/wot-mods
+	await curseforgeArchive ("wot");
 
-		// https://www.curseforge.com/wow/addons
-		curseforgeArchive("wow")
-	];
+	// https://www.curseforge.com/rom/addons
+	await curseforgeArchive ("rom");
 
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
+	// https://www.curseforge.com/rift/addons
+	await curseforgeArchive ("rift");
 
-	// Reset
-	promises.length = 0;
+	// https://www.curseforge.com/skyrim/mods
+	await curseforgeArchive ("skyrim");
 
-	promises = [
-		// https://www.curseforge.com/sc2/assets
-		curseforgeArchive("sc2"),
+	// https://www.curseforge.com/tsw/tsw-mods
+	await curseforgeArchive ("tsw");
 
-		// https://www.curseforge.com/kerbal/ksp-mods
-		curseforgeArchive("ksp"),
+	// https://www.curseforge.com/teso/teso-addons
+	await curseforgeArchive ("teso");
 
-		// https://www.curseforge.com/wildstar/ws-addons
-		curseforgeArchive("ws"),
+	// https://www.curseforge.com/stardewvalley/mods
+	await curseforgeArchive ("sv");
 
-		// https://www.curseforge.com/terraria/maps
-		curseforgeArchive("terraria"),
+	// https://www.curseforge.com/swlegends/tswl-mods
+	await curseforgeArchive ("swl");
 
-		// https://www.curseforge.com/worldoftanks/wot-mods
-		curseforgeArchive("wot"),
+	// https://www.curseforge.com/chronicles-of-arcadia/addons
+	await curseforgeArchive ("coa");
 
-		// https://www.curseforge.com/rom/addons
-		curseforgeArchive("rom"),
+	// https://www.curseforge.com/darkestdungeon/dd-mods
+	await curseforgeArchive ("dd");
 
-		// https://www.curseforge.com/rift/addons
-		curseforgeArchive("rift")
-	];
+	// https://www.curseforge.com/surviving-mars/mods
+	await curseforgeArchive ("sm");
 
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
+	// https://www.curseforge.com/gta5/gta-v-mods
+	await curseforgeArchive ("gta5");
 
-	// Reset
-	promises.length = 0;
+	// https://www.curseforge.com/staxel/staxel-mods
+	await curseforgeArchive ("staxel");
 
-	promises = [
-		// https://www.curseforge.com/skyrim/mods
-		curseforgeArchive("skyrim"),
+	// http://www.wolfenvault.com/mods.html
+	await wolfenVaultArchive ();
 
-		// https://www.curseforge.com/tsw/tsw-mods
-		curseforgeArchive("tsw"),
+	// https://half-life.fandom.com/wiki/Mods
+	await halfLifeWikiArchive ();
 
-		// https://www.curseforge.com/teso/teso-addons
-		curseforgeArchive("teso"),
+	// https://www.runthinkshootlive.com/hl
+	await runthinkshootliveArchive ("hl");
 
-		// https://www.curseforge.com/stardewvalley/mods
-		curseforgeArchive("sv"),
+	// https://www.runthinkshootlive.com/of
+	await runthinkshootliveArchive ("of");
 
-		// https://www.curseforge.com/swlegends/tswl-mods
-		curseforgeArchive("swl"),
+	// https://www.runthinkshootlive.com/hl2
+	await runthinkshootliveArchive ("hl2");
 
-		// https://www.curseforge.com/chronicles-of-arcadia/addons
-		curseforgeArchive("coa"),
+	// https://www.runthinkshootlive.com/ep1
+	await runthinkshootliveArchive ("ep1");
 
-		// https://www.curseforge.com/darkestdungeon/dd-mods
-		curseforgeArchive("dd")
-	];
+	// https://www.runthinkshootlive.com/ep2
+	await runthinkshootliveArchive ("ep2");
 
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
+	// https://www.runthinkshootlive.com/bm
+	await runthinkshootliveArchive ("bm");
 
-	// Reset
-	promises.length = 0;
-
-	promises = [
-		// https://www.curseforge.com/surviving-mars/mods
-		curseforgeArchive("sm"),
-
-		// https://www.curseforge.com/gta5/gta-v-mods
-		curseforgeArchive("gta5"),
-
-		// https://www.curseforge.com/staxel/staxel-mods
-		curseforgeArchive("staxel"),
-
-		// http://www.wolfenvault.com/mods.html
-		wolfenVaultArchive(),
-
-		// https://half-life.fandom.com/wiki/Mods
-		halfLifeWikiArchive(),
-
-		// https://www.runthinkshootlive.com/hl
-		runthinkshootliveArchive("hl"),
-
-		// https://www.runthinkshootlive.com/of
-		runthinkshootliveArchive("of")
-	];
-
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
-
-	// Reset
-	promises.length = 0;
-
-	promises = [
-		// https://www.runthinkshootlive.com/hl2
-		runthinkshootliveArchive("hl2"),
-
-		// https://www.runthinkshootlive.com/ep1
-		runthinkshootliveArchive("ep1"),
-
-		// https://www.runthinkshootlive.com/ep2
-		runthinkshootliveArchive("ep2"),
-
-		// https://www.runthinkshootlive.com/bm
-		runthinkshootliveArchive("bm"),
-
-		// https://www.gta5-mods.com/all/most-downloaded
-		gta5Archive()
-	];
-
-	for (var i = 0; i < promises.length; i++) {
-		try {
-			await promises[i];
-			console.log("Completed subsection " + i);
-		} catch (e) {
-			console.error(e);
-			console.trace();
-		}
-	}
-
-	// Reset
-	promises.length = 0;
-	// clang-format on
+	// https://www.gta5-mods.com/all/most-downloaded
+	await gta5Archive ();
 
 	await browser.close();
 

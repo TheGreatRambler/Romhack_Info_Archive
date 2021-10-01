@@ -831,7 +831,8 @@ async function gamebananaArchive (category) {
 		await sleepForTime (20 * 1000);
 
 		if (typeof jsondata !== "string") {
-			var id        = link.split("?")[0].replace("https://gamebanana.com/" + category + "/", "");
+			var id = link.split("?")[0].replace("https://gamebanana.com/" + category + "/", "");
+			// StatsModule appears to have been silenty removed
 			var statsData = (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=StatsModule")).data;
 			var temp      = {
                 name: jsondata.name,
@@ -842,8 +843,9 @@ async function gamebananaArchive (category) {
                 //system: jsondata.isPartOf.gamePlatform,
                 system: null,
                 // View count is an option?? Maybe use it???
-                downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
-                type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
+                // Downloads and type appear to have been removed
+                //downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
+                //type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
                 url: "https://gamebanana.com/" + category + "/" + id,
                 source: "gamebanana "
 			};

@@ -15,7 +15,7 @@ A `config.json` can be used to specify which scrapers you would like to put to u
 * [gbahacks.com](https://www.gbahacks.com/p/pokemon-rom-hack-list.html) (key 8)
 * [smspower.org](https://www.smspower.org/Hacks/GameModifications) (key 9)
 * [atariage.com](https://atariage.com/software_hacks.php?SystemID=2600) (key 10)
-* [gamebanana.com projects](https://gamebanana.com/projects?mid=SubmissionsList) (key 11)
+* [gamebanana.com mods](https://gamebanana.com/mods?mid=SubmissionsList) (key 11)
 * [gamebanana.com maps](https://gamebanana.com/maps?mid=SubmissionsList) (key 12)
 * [gamebanana.com skins](https://gamebanana.com/skins?mid=SubmissionsList) (key 13)
 * [moddb.com mods](https://www.moddb.com/mods) (key 14)

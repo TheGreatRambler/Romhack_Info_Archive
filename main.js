@@ -821,7 +821,7 @@ async function gamebananaArchive (category) {
 			start++;
 		}
 
-		await sleepForTime (20 * 1000);
+		await sleepForTime (7 * 1000);
 	}
 
 	console.log("Gamebanana " + category + " Length: " + links.length);
@@ -832,22 +832,26 @@ async function gamebananaArchive (category) {
 
 		if (typeof jsondata !== "string") {
 			var id = link.split("?")[0].replace("https://gamebanana.com/" + category + "/", "");
-			// StatsModule appears to have been silenty removed
-			var statsData = (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=StatsModule")).data;
-			var temp      = {
-                name: jsondata.name,
-                author: jsondata.author.name,
-                release: jsondata.datePublished.split("T")[0],
-                originalgame: jsondata.isPartOf.name,
-                // Always reports PC, it's so unreliable remove it entirely
-                //system: jsondata.isPartOf.gamePlatform,
-                system: null,
-                // View count is an option?? Maybe use it???
-                // Downloads and type appear to have been removed
-                //downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
-                //type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
-                url: "https://gamebanana.com/" + category + "/" + id,
-                source: "gamebanana "
+			try {
+				// This module is often not available
+				var downloadData = (await axios.get("https://gamebanana.com/" + category + "/download/" + id + "?api=ArchiveTreesModule")).data;
+			} catch (e) {
+				downloadData = null;
+			}
+			var temp = {
+				name: jsondata.name,
+				author: jsondata.author.name,
+				release: jsondata.datePublished.split("T")[0],
+				originalgame: jsondata.isPartOf.name,
+				// Always reports PC, it's so unreliable remove it entirely
+				//system: jsondata.isPartOf.gamePlatform,
+				system: null,
+				// View count is an option?? Maybe use it???
+				//downloads: typeof statsData._aCellValues._nDownloadCount !== "undefined" ? statsData._aCellValues._nDownloadCount : null,
+				downloads: downloadData ? Object.values(downloadData._aCellValues._aFiles)[0]._nDownloadCount : null,
+				//type: (await axios.get("https://gamebanana.com/" + category + "/" + id + "?api=CategoryModule")).data._aCellValues._aCategory._sName,
+				url: "https://gamebanana.com/" + category + "/" + id,
+				source: "gamebanana "
 			};
 			temp.source += category;
 			return temp;
@@ -1798,8 +1802,8 @@ function dumpCurrentData () {
 	// https://atariage.com/software_hacks.php?SystemID=2600
 	await atari2600Archive ();
 
-	// https://gamebanana.com/projects?mid=SubmissionsList
-	await gamebananaArchive ("projects");
+	// https://gamebanana.com/mods?mid=SubmissionsList
+	await gamebananaArchive ("mods");
 
 	// https://gamebanana.com/maps?mid=SubmissionsList
 	await gamebananaArchive ("maps");

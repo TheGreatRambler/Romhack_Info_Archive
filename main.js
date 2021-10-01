@@ -540,30 +540,21 @@ async function sm64DSArchive1 () {
 
 	await handleWebpageTemplate (links, async function returnHackEntry (page) {
 		var shouldInclude = await page.evaluate(() => {
-			return document.getElementsByClassName("pi-data-value pi-font").length != 0;
+			return document.getElementsByClassName("wikitable").length != 0;
 		});
 
 		if (shouldInclude) {
 			return page.evaluate(() => {
-				var temp = {
-					name: document.getElementsByClassName("page-header__title")[0].innerText,
-					author: document.getElementsByClassName("pi-data-value pi-font")[0].innerText.split(" ")[0],
+				return {
+					name: document.getElementById("firstHeading").innerText,
+					author: document.getElementsByTagName("tbody")[0].children[2].children[1].innerText,
 					originalgame: "Super Mario 64 DS",
 					system: "NDS",
 					downloads: null,
 					type: null,
+					important: false,
 					source: "mario64hacks wiki sm64ds"
 				};
-
-				if (document.getElementsByClassName("pi-data-label pi-secondary-font")[1].innerText === "Published") {
-					temp.release   = document.getElementsByClassName("pi-data-value pi-font")[1].innerText.replace("Demo: ", "");
-					temp.important = parseInt (document.getElementsByClassName("pi-data-value pi-font")[2].innerText) >= 70;
-				} else {
-					temp.release   = null;
-					temp.important = parseInt (document.getElementsByClassName("pi-data-value pi-font")[1].innerText) >= 70;
-				}
-
-				return temp;
 			});
 		} else {
 			return undefined;

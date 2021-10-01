@@ -11,7 +11,7 @@ A `config.json` can be used to specify which scrapers you would like to put to u
 * [smwcentral.net Super Mario 64 hacks](https://www.smwcentral.net/?p=section&s=sm64hacks) (key 4)
 * [smwcentral.net Yoshi's Island hacks](https://www.smwcentral.net/?p=section&s=yihacks) (key 5)
 * [mario64hacks.fandom.com List of N64 Hacks](https://mario64hacks.fandom.com/wiki/List_of_N64_Hacks) (key 6)
-* [mario64hacks.fandom.com List of DS Hacks](https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks) (key 7)
+* [SM64DS Romhacking Wiki List of DS Hacks](https://sm64dsromhacking.miraheze.org/wiki/List_of_Hacks) (key 7)
 * [gbahacks.com](https://www.gbahacks.com/p/pokemon-rom-hack-list.html) (key 8)
 * [smspower.org](https://www.smspower.org/Hacks/GameModifications) (key 9)
 * [atariage.com](https://atariage.com/software_hacks.php?SystemID=2600) (key 10)

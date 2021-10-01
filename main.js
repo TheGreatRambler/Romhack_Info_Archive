@@ -517,7 +517,7 @@ async function sm64DSArchive1 () {
 
 	var mainBrowserPage = await (await browser.createIncognitoBrowserContext()).newPage();
 
-	await mainBrowserPage.goto("https://mario64hacks.fandom.com/wiki/List_of_DS_Hacks", {
+	await mainBrowserPage.goto("https://sm64dsromhacking.miraheze.org/wiki/List_of_Hacks", {
 		waitUntil: "domcontentloaded",
 		timeout: 300000
 	});
@@ -525,7 +525,7 @@ async function sm64DSArchive1 () {
 	var links = await mainBrowserPage.evaluate(() => {
 		var allLinks = [];
 
-		for (var tables = 0; tables < 5; tables++) {
+		for (var tables = 0; tables < 11; tables++) {
 			allLinks = allLinks.concat(Array.from(document.getElementsByTagName("table")[tables].firstElementChild.children).filter(function (element, index) {
 																																return index !== 0 && element.firstElementChild.firstElementChild && element.firstElementChild.firstElementChild.tagName === "A" && element.firstElementChild.firstElementChild.href !== "";
 																															})
